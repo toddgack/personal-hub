@@ -1,71 +1,148 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spencer's Project Hub</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A home for personal apps and tools.">
+  <title>Personal Hub</title>
   <style>
+    :root {
+      color-scheme: dark;
+      --background: #111016;
+      --surface: #191720;
+      --border: #34303e;
+      --text: #f5f2fa;
+      --muted: #b8b0c3;
+      --accent: #d3b8ff;
+      --accent-surface: #2c223d;
+    }
+
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      background: #101827;
-      color: #f8fafc;
-      font-family: system-ui, sans-serif;
-      display: grid;
-      place-items: center;
+      background: radial-gradient(ellipse 38rem 24rem at 50% 0%, #21182e, transparent),
+        var(--background);
+      color: var(--text);
+      font: 1rem/1.55 system-ui, sans-serif;
     }
 
     main {
-      width: min(90%, 720px);
-      padding: 48px 0;
+      width: min(100% - 2.5rem, 54rem);
+      margin-inline: auto;
+      padding-block: clamp(3.5rem, 11vw, 8rem);
     }
+
+    header { margin-bottom: clamp(2.5rem, 6vw, 4rem); }
+
+    h1, h2, h3, p { margin: 0; }
 
     h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      margin-bottom: 12px;
+      font-size: clamp(2.75rem, 8vw, 5rem);
+      line-height: 1.05;
+      letter-spacing: -.065em;
     }
 
-    p { color: #94a3b8; line-height: 1.7; }
+    header p {
+      margin-top: .875rem;
+      color: var(--muted);
+      font-size: 1.125rem;
+    }
+
+    h2 {
+      margin-bottom: .875rem;
+      font-size: .875rem;
+      font-weight: 650;
+      color: var(--accent);
+    }
 
     .projects {
       display: grid;
-      gap: 16px;
-      margin-top: 32px;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+      gap: 1rem;
     }
 
-    .project {
-      padding: 24px;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      background: #1e293b;
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: clamp(1.25rem, 4vw, 1.75rem);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      background: var(--surface);
     }
 
-    .project h2 {
-      margin: 0 0 8px;
-      font-size: 1.2rem;
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      margin-bottom: 1.125rem;
+      padding: .22rem .65rem;
+      border-radius: 1rem;
+      background: var(--accent-surface);
+      color: var(--accent);
+      font-size: .75rem;
+      font-weight: 650;
     }
 
-    .project p { margin: 0; }
+    .status::before {
+      content: "";
+      width: .35rem;
+      height: .35rem;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .card h3 {
+      font-size: 1.25rem;
+      line-height: 1.25;
+      letter-spacing: -.025em;
+    }
+
+    .card p {
+      margin-top: .625rem;
+      color: var(--muted);
+    }
+
+    .card .launch {
+      display: inline-block;
+      margin-top: auto;
+      padding-top: 1rem;
+      color: var(--accent);
+      font-weight: 650;
+      text-underline-offset: .25em;
+    }
+
+    .launch:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: .125rem;
+    }
   </style>
 </head>
-
 <body>
   <main>
-    <h1>Personal Project Hub</h1>
-    <p>Applications, analytics, and development projects.</p>
+    <header>
+      <h1>Personal Hub</h1>
+      <p>A home for my apps and tools.</p>
+    </header>
 
-    <section class="projects">
-      <div class="project">
-        <h2>Madden NFL Analytics</h2>
-        <p>Player ratings, team comparisons, and historical trends.</p>
-      </div>
+    <section aria-labelledby="projects-title">
+      <h2 id="projects-title">Projects</h2>
+      <div class="projects">
+        <!-- Copy a card to add a project. Add a launch link after the description when its URL is ready. -->
+        <article class="card">
+          <span class="status">Link pending</span>
+          <h3>Madden NFL 27 Analytics</h3>
+          <p>Track Chicago Bears player ratings and compare changes over time.</p>
+        </article>
 
-      <div class="project">
-        <h2>PTO Tracker</h2>
-        <p>Personal time-off planning and tracking.</p>
+        <article class="card">
+          <span class="status">Link pending</span>
+          <h3>PTO Tracker</h3>
+          <p>Plan time off and keep track of your PTO balance.</p>
+        </article>
       </div>
     </section>
   </main>
