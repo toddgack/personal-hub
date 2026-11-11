@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holiday Countdown · Personal Hub</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #09080c;
+    --surface: #15101b;
+    --border: #45275b;
+    --violet: #6F2DA8;
+    --lavender: #d3b8ff;
+    --orange: #E64100;
+    --peach: #ffc3a9;
+    --text: #f5f2fa;
+    --muted: #b8b0c3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(ellipse 42rem 25rem at 50% 0%, #271539, transparent), var(--background);
+    color: var(--text);
+    font: 1rem/1.5 system-ui, sans-serif;
+  }
+  main { width: min(100% - 2rem, 52rem); margin: auto; padding-block: clamp(2rem, 7vw, 5rem); }
+  a { color: var(--lavender); text-underline-offset: .2em; }
+  header { display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: clamp(2.15rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -.06em; }
+  h2, summary { font-size: 1.125rem; font-weight: 700; }
+  h3 { line-height: 1.2; overflow-wrap: anywhere; }
+  button, input, select { font: inherit; }
+  button {
+    cursor: pointer;
+    min-height: 2.75rem;
+    padding: .55rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: .55rem;
+    background: var(--surface);
+    color: var(--text);
+  }
+  button.primary { background: var(--violet); border-color: var(--violet); font-weight: 700; }
+  :focus-visible { outline: 2px solid var(--lavender); outline-offset: 3px; }
+  .hero, .event, details {
+    border: 1px solid var(--border);
+    border-radius: .9rem;
+    background: var(--surface);
+  }
+  .hero {
+    padding: clamp(1rem, 4vw, 2rem);
+    background: linear-gradient(115deg, #29153c, var(--surface));
+    border-inline-start: .25rem solid var(--violet);
+  }
+  .event { padding: .85rem 1rem; }
+  .event-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: clamp(.55rem, 2vw, 1rem);
+    align-items: center;
+  }
+  .emoji {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #322044;
+    font-size: 1.25rem;
+  }
+  .hero .emoji { width: clamp(2.6rem, 8vw, 4rem); font-size: clamp(1.25rem, 4vw, 2rem); }
+  .hero h2 { font-size: clamp(1.2rem, 4vw, 1.85rem); line-height: 1.15; overflow-wrap: anywhere; }
+  .eyebrow { color: var(--lavender); font-size: .75rem; font-weight: 700; margin-bottom: .25rem; }
+  .date, .muted { color: var(--muted); font-size: .875rem; }
+  .date { margin-top: .25rem; }
+  .count { color: var(--peach); font-size: .875rem; font-weight: 700; text-align: right; }
+  .hero .count { padding-inline-start: .75rem; border-inline-start: 2px solid var(--orange); }
+  .count strong { display: block; font-size: 1.4rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .hero .count strong { font-size: clamp(1.6rem, 6vw, 3.25rem); }
+  section + section, details { margin-top: 1.75rem; }
+  .events { display: grid; gap: .6rem; margin-top: .65rem; }
+  details { padding: .85rem 1rem; }
+  summary { cursor: pointer; }
+  .manage { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0 3.2rem; }
+  .manage button { font-size: .8rem; padding: .25rem .6rem; }
+  .message { margin-top: .5rem; color: var(--peach); }
+  .message:empty { display: none; }
+  dialog {
+    width: min(100% - 2rem, 29rem);
+    max-height: calc(100% - 2rem);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    background: var(--surface);
+    color: var(--text);
+  }
+  dialog::backdrop { background: #000b; }
+  form { display: grid; gap: .85rem; }
+  label { display: grid; gap: .3rem; font-weight: 600; }
+  label small { color: var(--muted); font-weight: 400; }
+  input, select {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: .45rem .55rem;
+    border: 1px solid var(--border);
+    border-radius: .5rem;
+    background: var(--background);
+    color: var(--text);
+  }
+  .dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .75rem; }
+  .actions { display: flex; justify-content: end; gap: .55rem; }
+  @media (max-width: 380px) {
+    .hero .event-main { grid-template-columns: auto minmax(0, 1fr); }
+    .hero .count { grid-column: 2; text-align: left; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <a href="/">← Personal Hub</a>
+  <header>
+    <h1>Holiday Countdown</h1>
+    <button class="primary" id="add" type="button">+ Add event</button>
+  </header>
+  <section id="next" class="hero" aria-label="Next event"></section>
+  <section aria-labelledby="upcoming-title">
+    <h2 id="upcoming-title">Upcoming events</h2>
+    <div id="upcoming" class="events"></div>
+  </section>
+  <details>
+    <summary id="past-title">Past events</summary>
+    <div id="past" class="events"></div>
+  </details>
+  <p id="notice" class="message" role="status"></p>
+</main>
+
+<dialog id="editor" aria-labelledby="editor-title">
+  <form id="event-form">
+    <h2 id="editor-title">Add event</h2>
+    <p class="muted">Custom events are saved in this browser.</p>
+    <label>Event name
+      <input id="event-name" required maxlength="80" placeholder="Parents arrive for Christmas">
+    </label>
+    <div class="dates">
+      <label>Start date <input id="start" type="date" required></label>
+      <label>End date <small>Optional, for a date range</small><input id="end" type="date"></label>
+    </div>
+    <label>Emoji <select id="emoji"></select></label>
+    <p id="form-error" class="message" role="alert"></p>
+    <div class="actions">
+      <button id="cancel" type="button">Cancel</button>
+      <button class="primary" type="submit">Save event</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  const storageKey = 'personal-hub.holiday-events.v1';
+  const dayMilliseconds = 86400000;
+  const emojiOptions = [
+    ['📅', 'Calendar'], ['🎄', 'Christmas tree'], ['🎁', 'Gift'], ['✈️', 'Flight'],
+    ['🚗', 'Road trip'], ['🏡', 'Home'], ['💜', 'Purple heart'], ['🎂', 'Birthday'],
+    ['🎉', 'Celebration'], ['🦃', 'Turkey'], ['🎃', 'Pumpkin'], ['🎆', 'Fireworks'],
+    ['🏖️', 'Vacation'], ['🏈', 'Football'], ['🍽️', 'Dinner'], ['🎓', 'Graduation']
+  ];
+  const get = (id) => document.getElementById(id);
+  const dialog = get('editor');
+  const form = get('event-form');
+  const start = get('start');
+  const end = get('end');
+  const emoji = get('emoji');
+  let editingId = null;
+
+  function dateKey(date) {
+    return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+      .map((part, index) => String(part).padStart(index === 0 ? 4 : 2, '0')).join('-');
+  }
+
+  // UTC arithmetic measures calendar days across daylight saving changes.
+  function dayNumber(key) {
+    return Date.parse(key + 'T00:00:00Z') / dayMilliseconds;
+  }
+
+  function validDate(key) {
+    return typeof key === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(key) &&
+      Number.isFinite(dayNumber(key)) &&
+      new Date(dayNumber(key) * dayMilliseconds).toISOString().slice(0, 10) === key;
+  }
+
+  const dateFormat = new Intl.DateTimeFormat(undefined, {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+  });
+
+  function dateText(event) {
+    const first = new Date(dayNumber(event.start) * dayMilliseconds);
+    return event.start === event.end ? dateFormat.format(first) :
+      dateFormat.formatRange(first, new Date(dayNumber(event.end) * dayMilliseconds));
+  }
+
+  function defaultHolidays(year) {
+    const novemberFirst = new Date(Date.UTC(year, 10, 1)).getUTCDay();
+    const thanksgiving = 22 + (4 - novemberFirst + 7) % 7;
+    return [
+      ['New Year’s Day', '01-01', '🎉'],
+      ['Independence Day', '07-04', '🎆'],
+      ['Halloween', '10-31', '🎃'],
+      ['Thanksgiving', '11-' + thanksgiving, '🦃'],
+      ['Christmas Day', '12-25', '🎄']
+    ].map(([name, monthDay, icon]) => {
+      const date = year + '-' + monthDay;
+      return { name, start: date, end: date, emoji: icon };
+    });
+  }
+
+  function readCustomEvents() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+      if (!Array.isArray(stored)) throw new Error('Invalid event list');
+      return stored.filter((event) => event && typeof event.id === 'string' &&
+        typeof event.name === 'string' && validDate(event.start) &&
+        validDate(event.end) && event.end >= event.start &&
+        emojiOptions.some(([icon]) => event.emoji === icon));
+    } catch {
+      get('notice').textContent = 'Saved events could not be read in this browser.';
+      return [];
+    }
+  }
+
+  let customEvents = readCustomEvents();
+
+  function saveCustomEvents(events) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(events));
+      customEvents = events;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function renderEvent(event, today, featured = false) {
+    const row = element('article', featured ? '' : 'event');
+    const icon = element('span', 'emoji', event.emoji);
+    icon.setAttribute('aria-hidden', 'true');
+    const copy = element('div');
+    const startsIn = dayNumber(event.start) - dayNumber(today);
+    const endedAgo = dayNumber(today) - dayNumber(event.end);
+    if (featured) copy.append(element('p', 'eyebrow', startsIn < 0 ? 'Happening now' : 'Next event'));
+    copy.append(element(featured ? 'h2' : 'h3', '', event.name), element('p', 'date', dateText(event)));
+
+    const count = element('div', 'count');
+    if (endedAgo > 0) count.textContent = endedAgo + (endedAgo === 1 ? ' day ago' : ' days ago');
+    else if (startsIn === 0) count.textContent = 'Today';
+    else if (startsIn < 0) count.textContent = 'In progress';
+    else count.append(element('strong', '', startsIn), element('span', '', startsIn === 1 ? 'day until' : 'days until'));
+
+    const layout = element('div', 'event-main');
+    layout.append(icon, copy, count);
+    row.append(layout);
+
+    if (event.id) {
+      const manage = element('div', 'manage');
+      const edit = element('button', '', 'Edit');
+      const remove = element('button', '', 'Delete');
+      edit.setAttribute('aria-label', 'Edit ' + event.name);
+      remove.setAttribute('aria-label', 'Delete ' + event.name);
+      edit.addEventListener('click', () => openEditor(event));
+      remove.addEventListener('click', () => {
+        if (!window.confirm('Delete “' + event.name + '”?')) return;
+        if (saveCustomEvents(customEvents.filter(({ id }) => id !== event.id))) {
+          get('notice').textContent = 'Event deleted.';
+          render();
+          get('add').focus();
+        } else {
+          get('notice').textContent = 'The event could not be deleted from browser storage.';
+        }
+      });
+      manage.append(edit, remove);
+      row.append(manage);
+    }
+    return row;
+  }
+
+  let renderedDay;
+  function render() {
+    const now = new Date();
+    const today = dateKey(now);
+    renderedDay = today;
+    const year = now.getFullYear();
+    const events = [...defaultHolidays(year - 1), ...defaultHolidays(year), ...defaultHolidays(year + 1), ...customEvents];
+    const upcoming = events.filter((event) => event.end >= today)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    const past = events.filter((event) => event.end < today)
+      .sort((a, b) => b.end.localeCompare(a.end));
+    const [next, ...later] = upcoming;
+
+    get('next').replaceChildren(next ? renderEvent(next, today, true) : element('p', 'muted', 'No upcoming events.'));
+    get('upcoming').replaceChildren(...(later.length ? later.map((event) => renderEvent(event, today)) :
+      [element('p', 'muted', 'No additional upcoming events.')]));
+    get('past-title').textContent = 'Past events (' + past.length + ')';
+    get('past').replaceChildren(...past.map((event) => renderEvent(event, today)));
+  }
+
+  function validateRange() {
+    end.min = start.value;
+    end.setCustomValidity(end.value && end.value < start.value ? 'End date must be on or after the start date.' : '');
+  }
+
+  function openEditor(event) {
+    form.reset();
+    editingId = event?.id ?? null;
+    get('editor-title').textContent = editingId ? 'Edit event' : 'Add event';
+    get('event-name').value = event?.name ?? '';
+    get('event-name').setCustomValidity('');
+    start.value = event?.start ?? dateKey(new Date());
+    end.value = event && event.end !== event.start ? event.end : '';
+    emoji.value = event?.emoji ?? '📅';
+    get('form-error').textContent = '';
+    validateRange();
+    dialog.showModal();
+    get('event-name').focus();
+  }
+
+  for (const [icon, label] of emojiOptions) {
+    emoji.add(new Option(icon + ' ' + label, icon));
+  }
+  get('add').addEventListener('click', () => openEditor());
+  get('cancel').addEventListener('click', () => dialog.close());
+  start.addEventListener('input', validateRange);
+  end.addEventListener('input', validateRange);
+  get('event-name').addEventListener('input', () => get('event-name').setCustomValidity(''));
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const nameField = get('event-name');
+    const name = nameField.value.trim();
+    if (!name) {
+      nameField.setCustomValidity('Enter an event name.');
+      nameField.reportValidity();
+      return;
+    }
+    if (!validDate(start.value) || (end.value && !validDate(end.value))) {
+      get('form-error').textContent = 'Choose valid dates with four-digit years.';
+      return;
+    }
+    const saved = { id: editingId ?? crypto.randomUUID(), name, start: start.value, end: end.value || start.value, emoji: emoji.value };
+    const events = editingId ? customEvents.map((item) => item.id === editingId ? saved : item) : [...customEvents, saved];
+    if (!saveCustomEvents(events)) {
+      get('form-error').textContent = 'This browser could not save your event.';
+      return;
+    }
+    dialog.close();
+    render();
+    get('notice').textContent = editingId ? 'Event updated.' : 'Event added.';
+    get('add').focus();
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== storageKey && event.key !== null) return;
+    customEvents = readCustomEvents();
+    render();
+  });
+  setInterval(() => {
+    if (dateKey(new Date()) !== renderedDay) render();
+  }, 30000);
+  render();
+</script>
+</body>
+</html>
