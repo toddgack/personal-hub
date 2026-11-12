@@ -127,13 +127,46 @@
       outline: 2px solid var(--accent);
       outline-offset: 4px;
     }
-  </style>
+  .brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: clamp(3rem, 9vw, 4.25rem);
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  background: var(--violet);
+  border-bottom: 3px solid var(--orange);
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -.07em;
+}
+
+.brand-heading h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 6vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -.065em;
+}
+
+.brand-heading { border: 0; padding: 0; }
+.brand-heading p { margin-top: .3rem; }
+.tile-heading { display: flex; align-items: center; gap: .65rem; }
+.tile-heading .brand-mark { width: 2.35rem; border-radius: .55rem; font-size: .75rem; border-bottom-width: 2px; }
+</style>
 </head>
 <body>
   <main>
-    <header>
-      <h1>Personal Hub</h1>
-      <p>A home for my apps and tools.</p>
+    <header class="brand-heading">
+      <span class="brand-mark" aria-hidden="true">PH</span>
+      <div><h1>Personal Hub</h1><p>A home for my apps and tools.</p></div>
     </header>
 
     <section aria-labelledby="projects-title">
@@ -141,24 +174,24 @@
       <div class="projects">
         <a class="card" href="/parent-loan" aria-labelledby="parent-loan-title">
           <span class="status">Available</span>
-          <h3 id="parent-loan-title">Parent Loan</h3>
+          <div class="tile-heading"><span class="brand-mark" aria-hidden="true">PL</span><h3 id="parent-loan-title">Parent Loan</h3></div>
           <p>Track payoff progress and upcoming payments.</p>
         </a>
         <a class="card" href="/holidays" aria-labelledby="holidays-title">
           <span class="status">Available</span>
-          <h3 id="holidays-title">Holiday Countdown</h3>
+          <div class="tile-heading"><span class="brand-mark" aria-hidden="true">HC</span><h3 id="holidays-title">Holiday Countdown</h3></div>
           <p>Count down to holidays and family events.</p>
         </a>
         <!-- Copy an available card for an app with a URL, or a pending card for a project without one. -->
         <article class="card">
           <span class="status">Link pending</span>
-          <h3>Madden NFL 27 Analytics</h3>
+          <div class="tile-heading"><span class="brand-mark" aria-hidden="true">M27</span><h3>Madden NFL 27 Analytics</h3></div>
           <p>Track Chicago Bears player ratings and compare changes over time.</p>
         </article>
 
         <a class="card" href="/pto" aria-labelledby="pto-title">
           <span class="status">Available</span>
-          <h3 id="pto-title">PTO Tracker</h3>
+          <div class="tile-heading"><span class="brand-mark" aria-hidden="true">PTO</span><h3 id="pto-title">PTO Tracker</h3></div>
           <p>Log hours taken and see your projected PTO balance.</p>
         </a>
       </div>
