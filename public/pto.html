@@ -38,7 +38,7 @@
   }
   .panel { padding: clamp(1rem, 4vw, 1.5rem); }
   .panel p { margin: .45rem 0 0; }
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: .75rem; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
   .metrics > div { padding: 1rem 1.2rem; border-inline-start: .23rem solid var(--violet); }
   .metrics > div:first-child { border-inline-start-color: var(--orange); }
   dd { font-size: clamp(1.55rem, 5vw, 2.25rem); font-weight: 750; letter-spacing: -.04em; }
@@ -91,21 +91,22 @@
   </section>
   <div id="tracker" hidden>
     <dl class="metrics">
-      <div><dt>Balance to date</dt><dd id="balance"></dd></div>
+      <div><dt>Actual balance to date</dt><dd id="balance"></dd></div>
       <div><dt id="projection-label">Year-end projection</dt><dd id="projection"></dd></div>
       <div><dt id="taken-label">Hours taken</dt><dd id="total-taken"></dd></div>
+      <div><dt id="planned-label">Hours planned</dt><dd id="total-planned"></dd></div>
     </dl>
     <section aria-labelledby="periods-heading">
       <div class="toolbar">
         <div>
           <h2 id="periods-heading">Pay periods</h2>
-          <p class="muted">Select the hours taken to edit a period.</p>
+          <p class="muted">Select a value in Taken or Planned to edit a pay period.</p>
         </div>
         <label>Year <select id="year"></select></label>
       </div>
       <div class="panel table-shell">
         <table aria-labelledby="periods-heading">
-          <thead><tr><th scope="col">Accrual date</th><th scope="col">Earned (h)</th><th scope="col">Taken (h)</th><th scope="col">Balance (h)</th></tr></thead>
+          <thead><tr><th scope="col">Accrual date</th><th scope="col">Earned (h)</th><th scope="col">Taken (h)</th><th scope="col">Planned (h)</th><th scope="col">Balance (h)</th></tr></thead>
           <tbody id="periods"></tbody>
         </table>
       </div>
@@ -117,11 +118,15 @@
 
 <dialog id="editor" class="panel" aria-labelledby="edit-title">
   <form id="edit-form">
-    <h2 id="edit-title">Edit hours taken</h2>
+    <h2 id="edit-title">Edit pay period</h2>
     <p id="edit-date" class="muted"></p>
     <label>Hours taken
       <input id="hours" type="number" min="0" max="1000000" step=".001" inputmode="decimal" required>
     </label>
+    <label>Hours planned
+      <input id="planned-hours" type="number" min="0" max="1000000" step=".001" inputmode="decimal" required>
+    </label>
+    <p class="muted">When you take planned PTO, enter the hours under Taken and clear those hours from Planned.</p>
     <p id="edit-error" class="negative" role="alert" hidden></p>
     <div class="actions">
       <button id="cancel" type="button">Cancel</button>
@@ -138,6 +143,7 @@
   const yearSelect = get('year');
   const editor = get('editor');
   const hoursField = get('hours');
+  const plannedField = get('planned-hours');
   const formatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   const hourFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
   let selectedPeriod = null;
@@ -167,11 +173,15 @@
       throw new Error('Invalid tracker data');
     }
     const first = day(data.firstAccrual);
-    if (!Object.entries(data.taken).every(([date, hours]) => validDate(date) &&
-        day(date) >= first && (day(date) - first) % interval === 0 && validHours(hours))) {
-      throw new Error('Invalid pay period entry');
+    const planned = data.planned === undefined ? {} : data.planned;
+    for (const entries of [data.taken, planned]) {
+      if (!entries || typeof entries !== 'object' || Array.isArray(entries) ||
+          !Object.entries(entries).every(([date, hours]) => validDate(date) &&
+          day(date) >= first && (day(date) - first) % interval === 0 && validHours(hours))) {
+        throw new Error('Invalid pay period entry');
+      }
     }
-    return data;
+    return { ...data, planned };
   }
 
   const workbookData = {
@@ -206,15 +216,18 @@
 
   let data = readForDisplay();
 
-  function periodsThrough(data, lastDate) {
+  function periodsThrough(data, lastDate, today) {
     const earned = units(data.earnedHours);
     let balance = units(data.openingHours);
+    let plannedTotal = 0;
     const rows = [];
     for (let n = day(data.firstAccrual), last = day(lastDate); n <= last; n += interval) {
       const date = isoDay(n);
       const taken = units(data.taken[date] ?? 0);
+      const planned = units(data.planned[date] ?? 0);
       balance += earned - taken;
-      rows.push({ date, earned, taken, balance });
+      if (date >= today) plannedTotal += planned;
+      rows.push({ date, earned, taken, planned, balance, forecast: balance - plannedTotal });
     }
     return rows;
   }
@@ -225,13 +238,15 @@
     return node;
   }
 
-  function openEditor(period) {
+  function openEditor(period, field) {
     selectedPeriod = period.date;
     get('edit-date').textContent = formatter.format(day(period.date) * dayMs);
     hoursField.value = String(period.taken / 1000);
+    plannedField.value = String(period.planned / 1000);
     get('edit-error').hidden = true;
     editor.showModal();
-    hoursField.select();
+    field.focus();
+    field.select();
   }
 
   function render() {
@@ -247,41 +262,49 @@
     yearSelect.replaceChildren(...Array.from({ length: lastYear - firstYear + 1 }, (_, i) => new Option(firstYear + i, firstYear + i)));
     yearSelect.value = String(year);
 
-    const rows = periodsThrough(data, Math.max(year, currentYear) + '-12-31');
+    const rows = periodsThrough(data, Math.max(year, currentYear) + '-12-31', today);
     const visible = rows.filter(({ date }) => date.startsWith(String(year)));
     const opening = units(data.openingHours);
     const current = rows.filter(({ date }) => date <= today).at(-1)?.balance ?? opening;
-    const projected = rows.filter(({ date }) => date <= year + '-12-31').at(-1)?.balance ?? opening;
+    const projected = rows.filter(({ date }) => date <= year + '-12-31').at(-1)?.forecast ?? opening;
     const total = visible.reduce((sum, row) => sum + row.taken, 0);
+    const totalPlanned = visible.reduce((sum, row) => row.date >= today ? sum + row.planned : sum, 0);
     const next = rows.find(({ date }) => date >= today)?.date;
-    for (const [id, amount] of [['balance', current], ['projection', projected], ['total-taken', total]]) {
+    for (const [id, amount] of [['balance', current], ['projection', projected], ['total-taken', total], ['total-planned', totalPlanned]]) {
       const metric = get(id);
       metric.textContent = formatHours(amount) + ' h';
       metric.classList.toggle('negative', amount < 0);
     }
-    get('projection-label').textContent = year + ' year-end balance';
-    get('taken-label').textContent = year + ' hours entered';
+    get('projection-label').textContent = year + (year >= currentYear ? ' year-end forecast' : ' year-end balance');
+    get('taken-label').textContent = year + ' hours taken';
+    get('planned-label').textContent = year + ' upcoming planned hours';
     get('periods').replaceChildren(...visible.map((period) => {
       const row = element('tr');
       if (period.date === next) row.dataset.next = '';
       const date = formatter.format(day(period.date) * dayMs);
       const heading = element('th', date);
       heading.scope = 'row';
-      const taken = element('td');
-      const button = element('button', formatHours(period.taken));
-      button.type = 'button';
-      button.dataset.date = period.date;
-      button.setAttribute('aria-label', 'Edit ' + formatHours(period.taken) + ' hours taken for ' + date);
-      button.addEventListener('click', () => openEditor(period));
-      taken.append(button);
-      const balance = element('td', formatHours(period.balance));
-      balance.classList.toggle('negative', period.balance < 0);
-      row.append(heading, element('td', formatHours(period.earned)), taken, balance);
+      row.append(heading, element('td', formatHours(period.earned)));
+      for (const [kind, field] of [['taken', hoursField], ['planned', plannedField]]) {
+        const cell = element('td');
+        const button = element('button', formatHours(period[kind]));
+        button.type = 'button';
+        button.dataset.date = period.date;
+        button.dataset.kind = kind;
+        button.setAttribute('aria-label', 'Edit ' + formatHours(period[kind]) + ' hours ' + kind + ' for ' + date);
+        button.addEventListener('click', () => openEditor(period, field));
+        cell.append(button);
+        row.append(cell);
+      }
+      const amount = period.date >= today ? period.forecast : period.balance;
+      const balance = element('td', formatHours(amount));
+      balance.classList.toggle('negative', amount < 0);
+      row.append(balance);
       return row;
     }));
     get('rules').textContent = 'Each period adds ' + formatHours(units(data.earnedHours)) +
       ' hours to the previous balance, then subtracts hours taken. Opening balance ' +
-      formatHours(opening) + ' hours.';
+      formatHours(opening) + ' hours. Forecasts subtract planned hours for accrual dates today or later. Past plans stay visible until you update them.';
   }
 
   get('import').addEventListener('click', () => get('file').click());
@@ -313,13 +336,16 @@
   get('edit-form').addEventListener('submit', (event) => {
     event.preventDefault();
     const value = hoursField.valueAsNumber;
-    if (!validHours(value)) return;
+    const planned = plannedField.valueAsNumber;
+    if (!validHours(value) || !validHours(planned)) return;
     try {
       const current = read();
       const offset = day(selectedPeriod) - day(current.firstAccrual);
       if (offset < 0 || offset % interval !== 0) throw new Error('Pay period changed');
       if (value === 0) delete current.taken[selectedPeriod];
       else current.taken[selectedPeriod] = value;
+      if (planned === 0) delete current.planned[selectedPeriod];
+      else current.planned[selectedPeriod] = planned;
       localStorage.setItem(key, JSON.stringify(current));
       data = current;
     } catch {
@@ -330,7 +356,7 @@
     }
     editor.close();
     render();
-    document.querySelector('button[data-date="' + selectedPeriod + '"]')?.focus();
+    document.querySelector('button[data-date="' + selectedPeriod + '"][data-kind="taken"]')?.focus();
     notice('Hours saved. Balances recalculated.');
   });
 
