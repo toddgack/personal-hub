@@ -141,16 +141,11 @@
     .loan { --fill: linear-gradient(145deg, var(--violet), #3b1b56); }
     .holiday { --fill: linear-gradient(145deg, var(--orange), #802904); }
     .pto { --fill: linear-gradient(145deg, var(--plum), #572550); }
-    .pending {
-      --fill: linear-gradient(145deg, #493046, #2d2039);
-      border-color: #f3d7ef99;
-      border-style: dashed;
-    }
+    .madden { --fill: linear-gradient(145deg, #694055, #352143); }
 
     .initials { font-size: .76rem; font-weight: 750; letter-spacing: .12em; }
     .title { font-size: clamp(1.05rem, 2vw, 1.36rem); font-weight: 750; line-height: 1.14; text-wrap: balance; }
     .arrow { line-height: 1; font-size: 1.15rem; }
-    .status { font-size: .7rem; }
 
     a.project:hover {
       border-color: #fff;
@@ -199,11 +194,11 @@
           <span class="title">PTO Tracker</span>
           <span class="arrow" aria-hidden="true">↗</span>
         </a></li>
-        <li><div class="project pending">
+        <li><a class="project madden" href="/madden">
           <span class="initials" aria-hidden="true">M27</span>
           <span class="title">Madden NFL 27 Analytics</span>
-          <span class="status">Link pending</span>
-        </div></li>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a></li>
       </ul>
     </nav>
   </main>
