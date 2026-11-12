@@ -1,0 +1,43 @@
+name: Refresh Madden ratings
+
+on:
+  schedule:
+    # 6:23 AM in Arizona (America/Phoenix).
+    - cron: '23 13 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/madden-ratings.yml'
+      - 'scripts/refresh-madden-ratings.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: madden-ratings-refresh
+  cancel-in-progress: false
+
+jobs:
+  check-ratings:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the hub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+      - name: Fetch new Madden updates
+        run: python3 scripts/refresh-madden-ratings.py public/madden-data.txt --only-new
+      - name: Publish a changed snapshot
+        run: |
+          if git diff --quiet -- public/madden-data.txt; then
+            echo "EA has no unpublished ratings weeks."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- public/madden-data.txt
+          git commit -m 'Refresh Madden NFL 27 ratings snapshot'
+          git push origin HEAD:main
