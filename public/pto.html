@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTO Tracker · Personal Hub</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --background: #09080c;
+    --surface: #15101b;
+    --border: #45275b;
+    --violet: #6F2DA8;
+    --lavender: #d3b8ff;
+    --orange: #C83803;
+    --text: #f5f2fa;
+    --muted: #b8b0c3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse 46rem 26rem at 50% 0%, #271539, transparent), var(--background);
+    color: var(--text);
+    font: 1rem/1.5 system-ui, sans-serif;
+  }
+  main { width: min(100% - 2rem, 56rem); margin: auto; padding: clamp(2rem, 7vw, 5rem) 0; }
+  a { color: var(--lavender); text-underline-offset: .2em; }
+  header, .toolbar { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 1rem; }
+  header { margin: 1.5rem 0; }
+  h1, h2, p, dl, dd { margin: 0; }
+  h1 { font-size: clamp(2.5rem, 8vw, 4.5rem); letter-spacing: -.065em; line-height: 1; }
+  h2 { font-size: 1.2rem; }
+  .muted, dt, th { color: var(--muted); }
+  .panel, .metrics > div {
+    border: 1px solid var(--border);
+    border-radius: .9rem;
+    background: var(--surface);
+  }
+  .panel { padding: clamp(1rem, 4vw, 1.5rem); }
+  .panel p { margin: .45rem 0 0; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: .75rem; }
+  .metrics > div { padding: 1rem 1.2rem; border-inline-start: .23rem solid var(--violet); }
+  .metrics > div:first-child { border-inline-start-color: var(--orange); }
+  dd { font-size: clamp(1.55rem, 5vw, 2.25rem); font-weight: 750; letter-spacing: -.04em; }
+  dd, td { font-variant-numeric: tabular-nums; }
+  .toolbar { margin: 1.75rem 0 .65rem; }
+  .toolbar p, .footnote { font-size: .875rem; }
+  .footnote { margin: 1rem 0 0; }
+  button, input, select { font: inherit; color: inherit; }
+  button, select, input {
+    border: 1px solid var(--border);
+    border-radius: .45rem;
+    background: var(--background);
+    min-height: 2.65rem;
+    padding: .4rem .7rem;
+  }
+  button { cursor: pointer; }
+  button.primary { background: var(--violet); border-color: var(--violet); font-weight: 700; }
+  :focus-visible { outline: 2px solid var(--lavender); outline-offset: 3px; }
+  .table-shell { overflow-x: auto; padding: 0; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: .6rem clamp(.4rem, 2vw, 1rem); text-align: right; }
+  th { font-size: .8rem; }
+  th:first-child { text-align: left; }
+  tbody th { font-size: .9rem; color: var(--text); }
+  tr + tr, tbody { border-top: 1px solid var(--border); }
+  td button { font-size: .85rem; min-width: 3rem; }
+  tr[data-next] { background: #21152d; }
+  .negative { color: #ffad91; }
+  dialog { width: min(100% - 2rem, 26rem); color: var(--text); }
+  dialog::backdrop { background: #000a; }
+  form { display: grid; gap: .8rem; }
+  form label { display: grid; gap: .35rem; }
+  .actions { display: flex; justify-content: end; gap: .5rem; }
+  #notice:empty { display: none; }
+  #notice { margin: .8rem 0; color: var(--lavender); }
+</style>
+</head>
+<body>
+<main>
+  <a href="/">← Personal Hub</a>
+  <header>
+    <h1>PTO Tracker</h1>
+    <button type="button" id="import">Import PTO data</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+  </header>
+  <p id="notice" role="status"></p>
+  <section class="panel" id="setup" aria-labelledby="setup-heading">
+    <h2 id="setup-heading">Load your PTO history</h2>
+    <p class="muted">Choose the PTO Tracker Import JSON prepared from your workbook. Your balances and edits are saved in this browser.</p>
+  </section>
+  <div id="tracker" hidden>
+    <dl class="metrics">
+      <div><dt>Balance to date</dt><dd id="balance"></dd></div>
+      <div><dt id="projection-label">Year-end projection</dt><dd id="projection"></dd></div>
+      <div><dt id="taken-label">Hours taken</dt><dd id="total-taken"></dd></div>
+    </dl>
+    <section aria-labelledby="periods-heading">
+      <div class="toolbar">
+        <div>
+          <h2 id="periods-heading">Pay periods</h2>
+          <p class="muted">Select the hours taken to edit a period.</p>
+        </div>
+        <label>Year <select id="year"></select></label>
+      </div>
+      <div class="panel table-shell">
+        <table aria-labelledby="periods-heading">
+          <thead><tr><th scope="col">Accrual date</th><th scope="col">Earned (h)</th><th scope="col">Taken (h)</th><th scope="col">Balance (h)</th></tr></thead>
+          <tbody id="periods"></tbody>
+        </table>
+      </div>
+      <p class="muted footnote" id="rules"></p>
+    </section>
+    <p class="muted footnote">Entries stay in this browser and do not sync across devices.</p>
+  </div>
+</main>
+
+<dialog id="editor" class="panel" aria-labelledby="edit-title">
+  <form id="edit-form">
+    <h2 id="edit-title">Edit hours taken</h2>
+    <p id="edit-date" class="muted"></p>
+    <label>Hours taken
+      <input id="hours" type="number" min="0" max="1000000" step=".001" inputmode="decimal" required>
+    </label>
+    <p id="edit-error" class="negative" role="alert" hidden></p>
+    <div class="actions">
+      <button id="cancel" type="button">Cancel</button>
+      <button class="primary" type="submit">Save hours</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  const key = 'personal-hub.pto.v1';
+  const dayMs = 86400000;
+  const interval = 14;
+  const get = (id) => document.getElementById(id);
+  const yearSelect = get('year');
+  const editor = get('editor');
+  const hoursField = get('hours');
+  const formatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  const hourFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
+  let selectedPeriod = null;
+
+  function day(iso) { return Date.parse(iso + 'T00:00:00Z') / dayMs; }
+  function isoDay(number) { return new Date(number * dayMs).toISOString().slice(0, 10); }
+  function todayKey() {
+    const now = new Date();
+    return [now.getFullYear(), now.getMonth() + 1, now.getDate()].map(n => String(n).padStart(2, '0')).join('-');
+  }
+  function validDate(iso) {
+    return typeof iso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(iso) &&
+      iso >= '1900-01-01' && iso <= '2199-12-31' && Number.isFinite(day(iso)) && isoDay(day(iso)) === iso;
+  }
+  // Work in integer thousandths of an hour to match the workbook's precision.
+  function units(hours) { return Math.round(hours * 1000); }
+  function validHours(value, min = 0) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= min &&
+      value <= 1000000 && Math.abs(value * 1000 - units(value)) < .000001;
+  }
+  function formatHours(value) { return hourFormat.format(value / 1000); }
+
+  function validate(data) {
+    if (!data || data.version !== 1 || !validDate(data.firstAccrual) ||
+        !validHours(data.openingHours, -1000000) || !validHours(data.earnedHours) ||
+        !data.taken || typeof data.taken !== 'object' || Array.isArray(data.taken)) {
+      throw new Error('Invalid tracker data');
+    }
+    const first = day(data.firstAccrual);
+    if (!Object.entries(data.taken).every(([date, hours]) => validDate(date) &&
+        day(date) >= first && (day(date) - first) % interval === 0 && validHours(hours))) {
+      throw new Error('Invalid pay period entry');
+    }
+    return data;
+  }
+
+  function read() {
+    const json = localStorage.getItem(key);
+    return json === null ? null : validate(JSON.parse(json));
+  }
+
+  function notice(message) { get('notice').textContent = message; }
+
+  function readForDisplay() {
+    try { return read(); }
+    catch {
+      notice('Saved PTO data could not be read. You can import the file again.');
+      return null;
+    }
+  }
+
+  let data = readForDisplay();
+
+  function periodsThrough(data, lastDate) {
+    const earned = units(data.earnedHours);
+    let balance = units(data.openingHours);
+    const rows = [];
+    for (let n = day(data.firstAccrual), last = day(lastDate); n <= last; n += interval) {
+      const date = isoDay(n);
+      const taken = units(data.taken[date] ?? 0);
+      balance += earned - taken;
+      rows.push({ date, earned, taken, balance });
+    }
+    return rows;
+  }
+
+  function element(tag, text) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function openEditor(period) {
+    selectedPeriod = period.date;
+    get('edit-date').textContent = formatter.format(day(period.date) * dayMs);
+    hoursField.value = String(period.taken / 1000);
+    get('edit-error').hidden = true;
+    editor.showModal();
+    hoursField.select();
+  }
+
+  function render() {
+    get('setup').hidden = Boolean(data);
+    get('tracker').hidden = !data;
+    if (!data) return;
+    const today = todayKey();
+    const currentYear = Number(today.slice(0, 4));
+    const firstYear = Number(data.firstAccrual.slice(0, 4));
+    const priorYear = Number(yearSelect.value);
+    const lastYear = Math.max(currentYear + 1, firstYear, ...Object.keys(data.taken).map(date => Number(date.slice(0, 4))));
+    const year = priorYear >= firstYear && priorYear <= lastYear ? priorYear : Math.max(currentYear, firstYear);
+    yearSelect.replaceChildren(...Array.from({ length: lastYear - firstYear + 1 }, (_, i) => new Option(firstYear + i, firstYear + i)));
+    yearSelect.value = String(year);
+
+    const rows = periodsThrough(data, Math.max(year, currentYear) + '-12-31');
+    const visible = rows.filter(({ date }) => date.startsWith(String(year)));
+    const opening = units(data.openingHours);
+    const current = rows.filter(({ date }) => date <= today).at(-1)?.balance ?? opening;
+    const projected = rows.filter(({ date }) => date <= year + '-12-31').at(-1)?.balance ?? opening;
+    const total = visible.reduce((sum, row) => sum + row.taken, 0);
+    const next = rows.find(({ date }) => date >= today)?.date;
+    for (const [id, amount] of [['balance', current], ['projection', projected], ['total-taken', total]]) {
+      const metric = get(id);
+      metric.textContent = formatHours(amount) + ' h';
+      metric.classList.toggle('negative', amount < 0);
+    }
+    get('projection-label').textContent = year + ' year-end balance';
+    get('taken-label').textContent = year + ' hours entered';
+    get('periods').replaceChildren(...visible.map((period) => {
+      const row = element('tr');
+      if (period.date === next) row.dataset.next = '';
+      const date = formatter.format(day(period.date) * dayMs);
+      const heading = element('th', date);
+      heading.scope = 'row';
+      const taken = element('td');
+      const button = element('button', formatHours(period.taken));
+      button.type = 'button';
+      button.dataset.date = period.date;
+      button.setAttribute('aria-label', 'Edit ' + formatHours(period.taken) + ' hours taken for ' + date);
+      button.addEventListener('click', () => openEditor(period));
+      taken.append(button);
+      const balance = element('td', formatHours(period.balance));
+      balance.classList.toggle('negative', period.balance < 0);
+      row.append(heading, element('td', formatHours(period.earned)), taken, balance);
+      return row;
+    }));
+    get('rules').textContent = 'Each period adds ' + formatHours(units(data.earnedHours)) +
+      ' hours to the previous balance, then subtracts hours taken. Opening balance ' +
+      formatHours(opening) + ' hours.';
+  }
+
+  get('import').addEventListener('click', () => get('file').click());
+  get('file').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    let imported;
+    try { imported = validate(JSON.parse(await file.text())); }
+    catch {
+      notice('Could not import that file. Choose the PTO Tracker Import JSON.');
+      return;
+    }
+    try {
+      if (localStorage.getItem(key) !== null && !window.confirm('Replace the PTO data and edits saved in this browser?')) return;
+      localStorage.setItem(key, JSON.stringify(imported));
+    } catch {
+      notice('This browser could not save the import.');
+      return;
+    }
+    data = imported;
+    yearSelect.value = '';
+    render();
+    notice('PTO data imported.');
+  });
+
+  yearSelect.addEventListener('change', render);
+  get('cancel').addEventListener('click', () => editor.close());
+  get('edit-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const value = hoursField.valueAsNumber;
+    if (!validHours(value)) return;
+    try {
+      const current = read();
+      const offset = day(selectedPeriod) - day(current.firstAccrual);
+      if (offset < 0 || offset % interval !== 0) throw new Error('Pay period changed');
+      if (value === 0) delete current.taken[selectedPeriod];
+      else current.taken[selectedPeriod] = value;
+      localStorage.setItem(key, JSON.stringify(current));
+      data = current;
+    } catch {
+      const error = get('edit-error');
+      error.textContent = 'Could not save the hours. Check browser storage and try again.';
+      error.hidden = false;
+      return;
+    }
+    editor.close();
+    render();
+    document.querySelector('button[data-date="' + selectedPeriod + '"]')?.focus();
+    notice('Hours saved. Balances recalculated.');
+  });
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== key && event.key !== null) return;
+    data = readForDisplay();
+    render();
+  });
+  render();
+</script>
+</body>
+</html>
