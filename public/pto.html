@@ -80,12 +80,42 @@
     .period-actions { width: 100%; justify-content: space-between; }
     .amount { text-align: left; }
   }
+.brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: clamp(3rem, 9vw, 4.25rem);
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  background: var(--violet);
+  border-bottom: 3px solid var(--orange);
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -.07em;
+}
+
+.brand-heading h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 6vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -.065em;
+}
+
+.brand-heading { margin: 1.2rem 0 1.5rem; }
 </style>
 </head>
 <body>
 <main>
   <a href="/">← Personal Hub</a>
-  <h1>PTO Tracker</h1>
+  <header class="brand-heading"><span class="brand-mark" aria-hidden="true">PTO</span><h1>PTO Tracker</h1></header>
   <dl class="metrics">
     <div><dt>Total available now</dt><dd id="available"></dd></div>
     <div><dt>Planned PTO</dt><dd id="planned-total"></dd><p class="muted">Current and next 26 periods</p></div>
