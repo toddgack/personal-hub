@@ -7,362 +7,372 @@
 <style>
   :root {
     color-scheme: dark;
-    --background: #09080c;
-    --surface: #15101b;
+    --bg: #09080c;
+    --panel: #15101b;
     --border: #45275b;
-    --violet: #6F2DA8;
+    --violet: #6f2da8;
     --lavender: #d3b8ff;
-    --orange: #C83803;
+    --orange: #c83803;
     --text: #f5f2fa;
     --muted: #b8b0c3;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: radial-gradient(ellipse 46rem 26rem at 50% 0%, #271539, transparent), var(--background);
+    min-height: 100vh;
+    background: radial-gradient(ellipse 46rem 26rem at 50% 0%, #271539, transparent), var(--bg);
     color: var(--text);
     font: 1rem/1.5 system-ui, sans-serif;
   }
-  main { width: min(100% - 2rem, 56rem); margin: auto; padding: clamp(2rem, 7vw, 5rem) 0; }
+  main { width: min(100% - 2rem, 58rem); margin: auto; padding: clamp(2rem, 6vw, 4rem) 0; }
   a { color: var(--lavender); text-underline-offset: .2em; }
-  header, .toolbar { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 1rem; }
-  header { margin: 1.5rem 0; }
-  h1, h2, p, dl, dd { margin: 0; }
-  h1 { font-size: clamp(2.5rem, 8vw, 4.5rem); letter-spacing: -.065em; line-height: 1; }
-  h2 { font-size: 1.2rem; }
-  .muted, dt, th { color: var(--muted); }
-  .panel, .metrics > div {
-    border: 1px solid var(--border);
-    border-radius: .9rem;
-    background: var(--surface);
-  }
-  .panel { padding: clamp(1rem, 4vw, 1.5rem); }
-  .panel p { margin: .45rem 0 0; }
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
-  .metrics > div { padding: 1rem 1.2rem; border-inline-start: .23rem solid var(--violet); }
+  h1, h2, h3, p, dl, dd { margin: 0; }
+  h1 { margin: 1rem 0 1.5rem; font-size: clamp(2.55rem, 8vw, 4.5rem); letter-spacing: -.06em; line-height: 1; }
+  h2, summary { font-size: 1.15rem; font-weight: 700; }
+  h3 { font-size: .98rem; }
+  .muted, dt { color: var(--muted); font-size: .84rem; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .7rem; }
+  .metrics > div, .period, details, dialog { border: 1px solid var(--border); border-radius: .8rem; background: var(--panel); }
+  .metrics > div { padding: .9rem 1.1rem; border-inline-start: .25rem solid var(--violet); }
   .metrics > div:first-child { border-inline-start-color: var(--orange); }
-  dd { font-size: clamp(1.55rem, 5vw, 2.25rem); font-weight: 750; letter-spacing: -.04em; }
-  dd, td { font-variant-numeric: tabular-nums; }
-  .toolbar { margin: 1.75rem 0 .65rem; }
-  .toolbar p, .footnote { font-size: .875rem; }
-  .footnote { margin: 1rem 0 0; }
-  button, input, select { font: inherit; color: inherit; }
+  .metrics dd { font-size: clamp(1.5rem, 5vw, 2.2rem); font-weight: 750; letter-spacing: -.045em; }
+  dd { font-variant-numeric: tabular-nums; }
+  section, details { margin-top: 1.5rem; }
+  section > h2 { margin-bottom: .5rem; }
+  .periods { display: grid; gap: .5rem; }
+  .period { padding: .75rem 1rem; }
+  #current .period { background: linear-gradient(110deg, #29153c, var(--panel)); border-inline-start: .25rem solid var(--violet); }
+  .period-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .65rem 1rem; }
+  .period-actions { display: flex; align-items: center; gap: .6rem 1rem; flex-wrap: wrap; }
+  .amount { text-align: right; }
+  .amount dd { color: var(--lavender); font-weight: 700; }
+  .amount .negative, .negative { color: #ffad91; }
+  .entries { list-style: none; padding: 0; margin: .65rem 0 0; border-top: 1px solid var(--border); }
+  .entries li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-top: .55rem; }
+  .entries li > div { overflow-wrap: anywhere; }
+  .entry-label { font-weight: 650; }
+  .entry-meta { color: var(--muted); font-size: .82rem; }
+  .entry-meta[data-planned] { color: var(--lavender); }
+  details { padding: .85rem 1rem; }
+  summary { cursor: pointer; }
+  details .periods { margin-top: .75rem; }
+  button, select, input { font: inherit; color: inherit; }
   button, select, input {
+    min-height: 2.65rem;
     border: 1px solid var(--border);
     border-radius: .45rem;
-    background: var(--background);
-    min-height: 2.65rem;
-    padding: .4rem .7rem;
+    padding: .4rem .75rem;
+    background: var(--bg);
   }
-  button { cursor: pointer; }
+  button { cursor: pointer; white-space: nowrap; }
+  .period button { font-size: .85rem; }
   button.primary { background: var(--violet); border-color: var(--violet); font-weight: 700; }
   :focus-visible { outline: 2px solid var(--lavender); outline-offset: 3px; }
-  .table-shell { overflow-x: auto; padding: 0; }
-  table { border-collapse: collapse; width: 100%; }
-  th, td { padding: .6rem clamp(.4rem, 2vw, 1rem); text-align: right; }
-  th { font-size: .8rem; }
-  th:first-child { text-align: left; }
-  tbody th { font-size: .9rem; color: var(--text); }
-  tr + tr, tbody { border-top: 1px solid var(--border); }
-  td button { font-size: .85rem; min-width: 3rem; }
-  tr[data-next] { background: #21152d; }
-  .negative { color: #ffad91; }
-  dialog { width: min(100% - 2rem, 26rem); color: var(--text); }
-  dialog::backdrop { background: #000a; }
-  form { display: grid; gap: .8rem; }
-  form label { display: grid; gap: .35rem; }
-  .actions { display: flex; justify-content: end; gap: .5rem; }
-  #notice:empty { display: none; }
-  #notice { margin: .8rem 0; color: var(--lavender); }
+  dialog { width: min(100% - 2rem, 27rem); color: var(--text); padding: 1.2rem; }
+  dialog::backdrop { background: #000b; }
+  form { display: grid; gap: .75rem; }
+  form label { display: grid; gap: .3rem; }
+  .actions { display: flex; flex-wrap: wrap; justify-content: end; gap: .5rem; }
+  .actions #remove { margin-inline-end: auto; }
+  .footnote { margin: .75rem 0 0; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  @media (max-width: 450px) {
+    .period-actions { width: 100%; justify-content: space-between; }
+    .amount { text-align: left; }
+  }
 </style>
 </head>
 <body>
 <main>
   <a href="/">← Personal Hub</a>
-  <header>
-    <h1>PTO Tracker</h1>
-    <button type="button" id="import">Import PTO data</button>
-    <input type="file" id="file" accept=".json,application/json" hidden>
-  </header>
-  <p id="notice" role="status"></p>
-  <section class="panel" id="setup" aria-labelledby="setup-heading">
-    <h2 id="setup-heading">Load your PTO history</h2>
-    <p class="muted">Choose the PTO Tracker Import JSON prepared from your workbook. Your balances and edits are saved in this browser.</p>
+  <h1>PTO Tracker</h1>
+  <dl class="metrics">
+    <div><dt>Total available now</dt><dd id="available"></dd></div>
+    <div><dt>Planned PTO</dt><dd id="planned-total"></dd><p class="muted">Current and next 26 periods</p></div>
+    <div><dt>Taken PTO</dt><dd id="taken-total"></dd><p class="muted">Through the current period</p></div>
+  </dl>
+  <p id="notice" class="visually-hidden" role="status"></p>
+  <p id="storage-error" class="negative footnote" hidden></p>
+  <section aria-labelledby="current-title">
+    <h2 id="current-title">Current pay period</h2>
+    <div id="current"></div>
   </section>
-  <div id="tracker" hidden>
-    <dl class="metrics">
-      <div><dt>Actual balance to date</dt><dd id="balance"></dd></div>
-      <div><dt id="projection-label">Year-end projection</dt><dd id="projection"></dd></div>
-      <div><dt id="taken-label">Hours taken</dt><dd id="total-taken"></dd></div>
-      <div><dt id="planned-label">Hours planned</dt><dd id="total-planned"></dd></div>
-    </dl>
-    <section aria-labelledby="periods-heading">
-      <div class="toolbar">
-        <div>
-          <h2 id="periods-heading">Pay periods</h2>
-          <p class="muted">Select a value in Taken or Planned to edit a pay period.</p>
-        </div>
-        <label>Year <select id="year"></select></label>
-      </div>
-      <div class="panel table-shell">
-        <table aria-labelledby="periods-heading">
-          <thead><tr><th scope="col">Accrual date</th><th scope="col">Earned (h)</th><th scope="col">Taken (h)</th><th scope="col">Planned (h)</th><th scope="col">Balance (h)</th></tr></thead>
-          <tbody id="periods"></tbody>
-        </table>
-      </div>
-      <p class="muted footnote" id="rules"></p>
-    </section>
-    <p class="muted footnote">Entries stay in this browser and do not sync across devices.</p>
-  </div>
+  <section aria-labelledby="future-title">
+    <h2 id="future-title">Next 26 pay periods</h2>
+    <div id="future" class="periods"></div>
+  </section>
+  <details>
+    <summary id="past-title">Past pay periods</summary>
+    <div id="past" class="periods"></div>
+  </details>
+  <p class="muted footnote" id="rules"></p>
+  <p class="muted footnote">New entries and edits are saved in this browser.</p>
 </main>
-
-<dialog id="editor" class="panel" aria-labelledby="edit-title">
-  <form id="edit-form">
-    <h2 id="edit-title">Edit pay period</h2>
-    <p id="edit-date" class="muted"></p>
-    <label>Hours taken
-      <input id="hours" type="number" min="0" max="1000000" step=".001" inputmode="decimal" required>
+<dialog id="editor" aria-labelledby="editor-title">
+  <form id="form">
+    <h2 id="editor-title">Add PTO</h2>
+    <p id="edit-period" class="muted"></p>
+    <label>Name (optional)
+      <input id="name" maxlength="80" placeholder="e.g. Utah trip">
     </label>
-    <label>Hours planned
-      <input id="planned-hours" type="number" min="0" max="1000000" step=".001" inputmode="decimal" required>
+    <label>Hours
+      <input id="hours" type="number" min=".001" max="1000000" step=".001" inputmode="decimal" required>
     </label>
-    <p class="muted">When you take planned PTO, enter the hours under Taken and clear those hours from Planned.</p>
+    <label>Status
+      <select id="status"><option value="planned">Planned</option><option value="taken">Taken</option></select>
+    </label>
     <p id="edit-error" class="negative" role="alert" hidden></p>
     <div class="actions">
-      <button id="cancel" type="button">Cancel</button>
-      <button class="primary" type="submit">Save hours</button>
+      <button type="button" id="remove" hidden>Delete</button>
+      <button type="button" id="cancel">Cancel</button>
+      <button class="primary" type="submit">Save PTO</button>
     </div>
   </form>
 </dialog>
-
 <script>
   const key = 'personal-hub.pto.v1';
   const dayMs = 86400000;
   const interval = 14;
-  const get = (id) => document.getElementById(id);
-  const yearSelect = get('year');
-  const editor = get('editor');
-  const hoursField = get('hours');
-  const plannedField = get('planned-hours');
-  const formatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
-  const hourFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
-  let selectedPeriod = null;
-
-  function day(iso) { return Date.parse(iso + 'T00:00:00Z') / dayMs; }
-  function isoDay(number) { return new Date(number * dayMs).toISOString().slice(0, 10); }
-  function todayKey() {
-    const now = new Date();
-    return [now.getFullYear(), now.getMonth() + 1, now.getDate()].map(n => String(n).padStart(2, '0')).join('-');
-  }
-  function validDate(iso) {
-    return typeof iso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(iso) &&
-      iso >= '1900-01-01' && iso <= '2199-12-31' && Number.isFinite(day(iso)) && isoDay(day(iso)) === iso;
-  }
-  // Work in integer thousandths of an hour to match the workbook's precision.
-  function units(hours) { return Math.round(hours * 1000); }
-  function validHours(value, min = 0) {
-    return typeof value === 'number' && Number.isFinite(value) && value >= min &&
-      value <= 1000000 && Math.abs(value * 1000 - units(value)) < .000001;
-  }
-  function formatHours(value) { return hourFormat.format(value / 1000); }
-
-  function validate(data) {
-    if (!data || data.version !== 1 || !validDate(data.firstAccrual) ||
-        !validHours(data.openingHours, -1000000) || !validHours(data.earnedHours) ||
-        !data.taken || typeof data.taken !== 'object' || Array.isArray(data.taken)) {
-      throw new Error('Invalid tracker data');
-    }
-    const first = day(data.firstAccrual);
-    const planned = data.planned === undefined ? {} : data.planned;
-    for (const entries of [data.taken, planned]) {
-      if (!entries || typeof entries !== 'object' || Array.isArray(entries) ||
-          !Object.entries(entries).every(([date, hours]) => validDate(date) &&
-          day(date) >= first && (day(date) - first) % interval === 0 && validHours(hours))) {
-        throw new Error('Invalid pay period entry');
-      }
-    }
-    return { ...data, planned };
-  }
-
+  const horizon = 26;
   const workbookData = {
     "version": 1,
     "firstAccrual": "2025-10-25",
     "openingHours": 103.04,
     "earnedHours": 4.616,
     "taken": {
-      "2025-11-22": 8,
-      "2025-12-20": 8,
-      "2026-02-14": 64,
-      "2026-03-28": 8,
-      "2026-08-01": 16,
-      "2026-10-24": 64
+      "2025-11-22": 8.0,
+      "2025-12-20": 8.0,
+      "2026-02-14": 64.0,
+      "2026-03-28": 8.0,
+      "2026-08-01": 16.0,
+      "2026-10-24": 64.0
     }
   };
+  const get = (id) => document.getElementById(id);
+  const editor = get('editor');
+  const dateFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  const hourFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
+  let activeEdit;
+
+  function day(iso) { return Date.parse(iso + 'T00:00:00Z') / dayMs; }
+  function isoDay(number) { return new Date(number * dayMs).toISOString().slice(0, 10); }
+  function todayNumber() {
+    const now = new Date();
+    return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / dayMs;
+  }
+  function units(hours) { return Math.round(hours * 1000); }
+  function validHours(value, min = 0) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= min &&
+      value <= 1000000 && Math.abs(value * 1000 - units(value)) < .000001;
+  }
+  function validDate(date) {
+    return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      Number.isFinite(day(date)) && isoDay(day(date)) === date;
+  }
+  function formatHours(value) { return hourFormat.format(value / 1000) + ' h'; }
+  function periodLabel(date) {
+    const end = day(date);
+    return dateFormat.formatRange(new Date((end - interval + 1) * dayMs), new Date(end * dayMs));
+  }
+
+  function normalize(source) {
+    if (!source || !validDate(source.firstAccrual) || !validHours(source.openingHours, -1000000) ||
+        !validHours(source.earnedHours)) throw new Error('Invalid PTO settings');
+    let entries;
+    if (source.version === 1) {
+      entries = ['taken', 'planned'].flatMap((status) =>
+        Object.entries(source[status] ?? {}).filter(([, hours]) => hours !== 0)
+          .map(([date, hours]) => ({ id: status + ':' + date, date, hours, status, name: '' }))
+      );
+    } else if (source.version === 2 && Array.isArray(source.entries)) {
+      entries = source.entries;
+    } else {
+      throw new Error('Invalid PTO data');
+    }
+    const first = day(source.firstAccrual);
+    const ids = new Set();
+    for (const entry of entries) {
+      if (!entry || typeof entry.id !== 'string' || ids.has(entry.id) || typeof entry.name !== 'string' ||
+          !['taken', 'planned'].includes(entry.status) || !validHours(entry.hours, .001) ||
+          !validDate(entry.date) || day(entry.date) < first || (day(entry.date) - first) % interval !== 0) {
+        throw new Error('Invalid PTO entry');
+      }
+      ids.add(entry.id);
+    }
+    return { version: 2, firstAccrual: source.firstAccrual, openingHours: source.openingHours,
+      earnedHours: source.earnedHours, entries };
+  }
 
   function read() {
-    const json = localStorage.getItem(key);
-    return json === null ? validate(structuredClone(workbookData)) : validate(JSON.parse(json));
+    const saved = localStorage.getItem(key);
+    return normalize(saved === null ? workbookData : JSON.parse(saved));
   }
 
-  function notice(message) { get('notice').textContent = message; }
-
-  function readForDisplay() {
+  function loadForDisplay() {
     try { return read(); }
     catch {
-      notice('Saved PTO data could not be read. You can import the file again.');
-      return null;
+      const message = get('storage-error');
+      message.textContent = 'Saved entries could not be read. The tracker is showing the original workbook data.';
+      message.hidden = false;
+      return normalize(workbookData);
     }
   }
 
-  let data = readForDisplay();
+  let data = loadForDisplay();
 
-  function periodsThrough(data, lastDate, today) {
+  function calculate(data, today) {
+    const first = day(data.firstAccrual);
+    const currentEnd = first + Math.max(0, Math.ceil((today - first) / interval)) * interval;
     const earned = units(data.earnedHours);
-    let balance = units(data.openingHours);
-    let plannedTotal = 0;
-    const rows = [];
-    for (let n = day(data.firstAccrual), last = day(lastDate); n <= last; n += interval) {
-      const date = isoDay(n);
-      const taken = units(data.taken[date] ?? 0);
-      const planned = units(data.planned[date] ?? 0);
-      balance += earned - taken;
-      if (date >= today) plannedTotal += planned;
-      rows.push({ date, earned, taken, planned, balance, forecast: balance - plannedTotal });
+    const entriesByDate = new Map();
+    for (const entry of data.entries) {
+      const entries = entriesByDate.get(entry.date) ?? [];
+      entries.push(entry);
+      entriesByDate.set(entry.date, entries);
     }
-    return rows;
+    let takenTotal = 0;
+    let plannedTotal = 0;
+    let available = units(data.openingHours);
+    let forecast = available;
+    const periods = [];
+    for (let end = first; end <= currentEnd + horizon * interval; end += interval) {
+      const date = isoDay(end);
+      const entries = entriesByDate.get(date) ?? [];
+      const taken = entries.reduce((total, entry) => total + (entry.status === 'taken' ? units(entry.hours) : 0), 0);
+      const planned = entries.reduce((total, entry) => total + (entry.status === 'planned' ? units(entry.hours) : 0), 0);
+      if (end <= currentEnd) {
+        takenTotal += taken;
+        available += (end <= today ? earned : 0) - taken;
+      }
+      if (end >= currentEnd) plannedTotal += planned;
+      forecast += earned - taken - (end >= currentEnd ? planned : 0);
+      periods.push({ date, end, entries, balance: forecast });
+    }
+    return { currentEnd, available, plannedTotal, takenTotal, periods };
   }
 
-  function element(tag, text) {
+  function element(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
     return node;
   }
 
-  function openEditor(period, field) {
-    selectedPeriod = period.date;
-    get('edit-date').textContent = formatter.format(day(period.date) * dayMs);
-    hoursField.value = String(period.taken / 1000);
-    plannedField.value = String(period.planned / 1000);
+  function action(text, label, handler, className) {
+    const button = element('button', text, className);
+    button.type = 'button';
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', handler);
+    return button;
+  }
+
+  function openEditor(period, entry) {
+    activeEdit = { date: period.date, id: entry?.id };
+    get('editor-title').textContent = entry ? 'Edit PTO' : 'Add PTO';
+    get('edit-period').textContent = periodLabel(period.date);
+    get('name').value = entry?.name ?? '';
+    get('hours').value = entry?.hours ?? '';
+    get('status').value = entry?.status ?? (period.end <= currentPeriod ? 'taken' : 'planned');
+    get('remove').hidden = !entry;
     get('edit-error').hidden = true;
     editor.showModal();
-    field.focus();
-    field.select();
+    get('hours').focus();
   }
 
-  function render() {
-    get('setup').hidden = Boolean(data);
-    get('tracker').hidden = !data;
-    if (!data) return;
-    const today = todayKey();
-    const currentYear = Number(today.slice(0, 4));
-    const firstYear = Number(data.firstAccrual.slice(0, 4));
-    const priorYear = Number(yearSelect.value);
-    const lastYear = Math.max(currentYear + 1, firstYear, ...Object.keys(data.taken).map(date => Number(date.slice(0, 4))));
-    const year = priorYear >= firstYear && priorYear <= lastYear ? priorYear : Math.max(currentYear, firstYear);
-    yearSelect.replaceChildren(...Array.from({ length: lastYear - firstYear + 1 }, (_, i) => new Option(firstYear + i, firstYear + i)));
-    yearSelect.value = String(year);
-
-    const rows = periodsThrough(data, Math.max(year, currentYear) + '-12-31', today);
-    const visible = rows.filter(({ date }) => date.startsWith(String(year)));
-    const opening = units(data.openingHours);
-    const current = rows.filter(({ date }) => date <= today).at(-1)?.balance ?? opening;
-    const projected = rows.filter(({ date }) => date <= year + '-12-31').at(-1)?.forecast ?? opening;
-    const total = visible.reduce((sum, row) => sum + row.taken, 0);
-    const totalPlanned = visible.reduce((sum, row) => row.date >= today ? sum + row.planned : sum, 0);
-    const next = rows.find(({ date }) => date >= today)?.date;
-    for (const [id, amount] of [['balance', current], ['projection', projected], ['total-taken', total], ['total-planned', totalPlanned]]) {
-      const metric = get(id);
-      metric.textContent = formatHours(amount) + ' h';
-      metric.classList.toggle('negative', amount < 0);
-    }
-    get('projection-label').textContent = year + (year >= currentYear ? ' year-end forecast' : ' year-end balance');
-    get('taken-label').textContent = year + ' hours taken';
-    get('planned-label').textContent = year + ' upcoming planned hours';
-    get('periods').replaceChildren(...visible.map((period) => {
-      const row = element('tr');
-      if (period.date === next) row.dataset.next = '';
-      const date = formatter.format(day(period.date) * dayMs);
-      const heading = element('th', date);
-      heading.scope = 'row';
-      row.append(heading, element('td', formatHours(period.earned)));
-      for (const [kind, field] of [['taken', hoursField], ['planned', plannedField]]) {
-        const cell = element('td');
-        const button = element('button', formatHours(period[kind]));
-        button.type = 'button';
-        button.dataset.date = period.date;
-        button.dataset.kind = kind;
-        button.setAttribute('aria-label', 'Edit ' + formatHours(period[kind]) + ' hours ' + kind + ' for ' + date);
-        button.addEventListener('click', () => openEditor(period, field));
-        cell.append(button);
-        row.append(cell);
+  function renderPeriod(period, currentEnd) {
+    const card = element('article', undefined, 'period');
+    const label = periodLabel(period.date);
+    const heading = element('h3', label);
+    const title = element('div');
+    title.append(heading, element('p', 'Accrues ' + formatHours(units(data.earnedHours)), 'muted'));
+    const amount = element('dl', undefined, 'amount');
+    amount.append(element('dt', period.end < currentEnd ? 'Closing balance' : 'Available after planned'),
+      element('dd', formatHours(period.balance), period.balance < 0 ? 'negative' : ''));
+    const add = action('+ Add PTO', 'Add PTO for ' + label, () => openEditor(period), period.end === currentEnd ? 'primary' : '');
+    add.dataset.period = period.date;
+    const actions = element('div', undefined, 'period-actions');
+    actions.append(amount, add);
+    const head = element('div', undefined, 'period-head');
+    head.append(title, actions);
+    card.append(head);
+    if (period.entries.length) {
+      const list = element('ul', undefined, 'entries');
+      for (const entry of period.entries) {
+        const row = element('li');
+        const info = element('div');
+        const status = entry.status === 'taken' ? 'Taken' : 'Planned';
+        const name = entry.name || 'PTO';
+        const meta = element('div', status + ' · ' + formatHours(units(entry.hours)), 'entry-meta');
+        if (entry.status === 'planned') meta.dataset.planned = '';
+        info.append(element('div', name, 'entry-label'), meta);
+        row.append(info, action('Edit', 'Edit ' + name + ', ' + status + ', ' + label, () => openEditor(period, entry)));
+        list.append(row);
       }
-      const amount = period.date >= today ? period.forecast : period.balance;
-      const balance = element('td', formatHours(amount));
-      balance.classList.toggle('negative', amount < 0);
-      row.append(balance);
-      return row;
-    }));
-    get('rules').textContent = 'Each period adds ' + formatHours(units(data.earnedHours)) +
-      ' hours to the previous balance, then subtracts hours taken. Opening balance ' +
-      formatHours(opening) + ' hours. Forecasts subtract planned hours for accrual dates today or later. Past plans stay visible until you update them.';
+      card.append(list);
+    }
+    return card;
   }
 
-  get('import').addEventListener('click', () => get('file').click());
-  get('file').addEventListener('change', async (event) => {
-    const file = event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-    let imported;
-    try { imported = validate(JSON.parse(await file.text())); }
-    catch {
-      notice('Could not import that file. Choose the PTO Tracker Import JSON.');
-      return;
+  let currentPeriod;
+  function render() {
+    const view = calculate(data, todayNumber());
+    currentPeriod = view.currentEnd;
+    for (const [id, amount] of [['available', view.available], ['planned-total', view.plannedTotal], ['taken-total', view.takenTotal]]) {
+      const node = get(id);
+      node.textContent = formatHours(amount);
+      node.classList.toggle('negative', amount < 0);
     }
-    try {
-      if (localStorage.getItem(key) !== null && !window.confirm('Replace the PTO data and edits saved in this browser?')) return;
-      localStorage.setItem(key, JSON.stringify(imported));
-    } catch {
-      notice('This browser could not save the import.');
-      return;
-    }
-    data = imported;
-    yearSelect.value = '';
-    render();
-    notice('PTO data imported.');
-  });
+    const past = view.periods.filter(({ end }) => end < currentPeriod);
+    get('current').replaceChildren(renderPeriod(view.periods[past.length], currentPeriod));
+    get('future').replaceChildren(...view.periods.slice(past.length + 1).map(period => renderPeriod(period, currentPeriod)));
+    get('past-title').textContent = 'Past pay periods (' + past.length + ')';
+    get('past').replaceChildren(...past.reverse().map(period => renderPeriod(period, currentPeriod)));
+    get('rules').textContent = 'PTO accrues at the end of each two-week period. Plans affect the running forecast from their period onward. Past plans stay in history until you edit them.';
+  }
 
-  yearSelect.addEventListener('change', render);
-  get('cancel').addEventListener('click', () => editor.close());
-  get('edit-form').addEventListener('submit', (event) => {
-    event.preventDefault();
-    const value = hoursField.valueAsNumber;
-    const planned = plannedField.valueAsNumber;
-    if (!validHours(value) || !validHours(planned)) return;
+  function commit(change, message) {
     try {
-      const current = read();
-      const offset = day(selectedPeriod) - day(current.firstAccrual);
-      if (offset < 0 || offset % interval !== 0) throw new Error('Pay period changed');
-      if (value === 0) delete current.taken[selectedPeriod];
-      else current.taken[selectedPeriod] = value;
-      if (planned === 0) delete current.planned[selectedPeriod];
-      else current.planned[selectedPeriod] = planned;
-      localStorage.setItem(key, JSON.stringify(current));
-      data = current;
+      const latest = read();
+      change(latest.entries);
+      localStorage.setItem(key, JSON.stringify(latest));
+      data = latest;
     } catch {
       const error = get('edit-error');
-      error.textContent = 'Could not save the hours. Check browser storage and try again.';
+      error.textContent = 'Could not save this change. Check browser storage and try again.';
       error.hidden = false;
       return;
     }
     editor.close();
+    get('storage-error').hidden = true;
     render();
-    document.querySelector('button[data-date="' + selectedPeriod + '"][data-kind="taken"]')?.focus();
-    notice('Hours saved. Balances recalculated.');
-  });
+    document.querySelector('button[data-period="' + activeEdit.date + '"]')?.focus();
+    get('notice').textContent = message;
+  }
 
+  get('cancel').addEventListener('click', () => editor.close());
+  get('form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const hours = get('hours').valueAsNumber;
+    if (!validHours(hours, .001)) return;
+    const entry = { id: activeEdit.id ?? crypto.randomUUID(), date: activeEdit.date, hours,
+      status: get('status').value, name: get('name').value.trim() };
+    commit((entries) => {
+      const index = entries.findIndex(({ id }) => id === entry.id);
+      if (index === -1 && activeEdit.id) throw new Error('Entry was removed');
+      if (index === -1) entries.push(entry);
+      else entries[index] = entry;
+    }, 'PTO saved as ' + entry.status + '.');
+  });
+  get('remove').addEventListener('click', () => {
+    if (!window.confirm('Delete this PTO entry?')) return;
+    commit((entries) => {
+      const index = entries.findIndex(({ id }) => id === activeEdit.id);
+      if (index !== -1) entries.splice(index, 1);
+    }, 'PTO entry deleted.');
+  });
   window.addEventListener('storage', (event) => {
     if (event.key !== key && event.key !== null) return;
-    data = readForDisplay();
+    data = loadForDisplay();
     render();
   });
   render();
