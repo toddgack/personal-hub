@@ -35,6 +35,7 @@
   .milestones > div + div { border-top:1px solid var(--edge); padding-top:.8rem; }
   .countdown { margin-top:.2rem; color:var(--lavender); font-size:.85rem; font-weight:650; }
   .milestones dd { font-size:clamp(1.15rem,3vw,1.45rem); }
+  .milestones .countdown { color:var(--lavender); font-size:.85rem; margin-top:.15rem; }
   section.schedule { margin-top:1.55rem; }
   .section-head { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:.3rem .8rem; margin-bottom:.65rem; }
   .section-head p { font-size:.86rem; }
@@ -78,7 +79,7 @@
       <h2 id="timeline-title">Payment timeline</h2>
       <dl class="milestones">
         <div><dt>Next payment</dt><dd id="next"></dd><p class="countdown" id="countdown" hidden></p></div>
-        <div><dt>Final scheduled payment</dt><dd id="final"></dd></div>
+        <div><dt>Final scheduled payment</dt><dd id="final"></dd><dd id="maturity" class="countdown"></dd></div>
         <div><dt>Payments counted</dt><dd id="counted"></dd></div>
         <div><dt>Payments left</dt><dd id="left"></dd></div>
       </dl>
@@ -176,6 +177,11 @@
     show('countdown', daysUntilNext === null ? '' :
       daysUntilNext + (daysUntilNext === 1 ? ' day to go' : ' days to go'));
     show('final', formatDate(state.final.day));
+    const daysToMaturity = state.final.day - today;
+    const maturity = daysToMaturity > 0 ?
+      daysToMaturity + (daysToMaturity === 1 ? ' day until maturity' : ' days until maturity') :
+      daysToMaturity === 0 ? 'Matures today' : 'Maturity date passed';
+    show('maturity', maturity);
     show('counted', state.counted.length + ' of ' + loan.count);
     show('left', state.upcoming.length);
     show('as-of', 'As of ' + formatDate(today));
