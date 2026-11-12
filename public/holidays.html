@@ -161,9 +161,14 @@ header { align-items: center; }
   <section aria-labelledby="upcoming-title">
     <h2 id="upcoming-title">Upcoming events</h2>
     <div id="upcoming" class="events"></div>
+    <details id="more-upcoming" hidden>
+      <summary id="more-upcoming-title">More upcoming events</summary>
+      <div id="upcoming-rest" class="events"></div>
+    </details>
   </section>
   <details>
     <summary id="past-title">Past events</summary>
+    <p id="past-range" class="muted"></p>
     <div id="past" class="events"></div>
   </details>
   <p id="notice" class="message" role="status"></p>
@@ -196,7 +201,8 @@ header { align-items: center; }
 </dialog>
 
 <script>
-  const storageKey = 'personal-hub.holiday-events.v1';
+  const legacyStorageKey = 'personal-hub.holiday-events.v1';
+  const storageKey = 'personal-hub.holiday-events.v2';
   const dayMilliseconds = 86400000;
   const emojiOptions = [
     ['📅', 'Calendar'], ['🎄', 'Christmas tree'], ['🎁', 'Gift'], ['✈️', 'Flight'],
@@ -239,29 +245,142 @@ header { align-items: center; }
       dateFormat.formatRange(first, new Date(dayNumber(event.end) * dayMilliseconds));
   }
 
-  function defaultHolidays(year) {
-    const novemberFirst = new Date(Date.UTC(year, 10, 1)).getUTCDay();
-    const thanksgiving = 22 + (4 - novemberFirst + 7) % 7;
-    return [
-      ['New Year’s Day', '01-01', '🎉'],
-      ['Independence Day', '07-04', '🎆'],
-      ['Halloween', '10-31', '🎃'],
-      ['Thanksgiving', '11-' + thanksgiving, '🦃'],
-      ['Christmas Day', '12-25', '🎄']
-    ].map(([name, monthDay, icon]) => {
-      const date = year + '-' + monthDay;
-      return { id: 'apex:' + date, name, start: date, end: date, emoji: icon };
-    });
-  }
+  const apexDates = [
+    ["2014-09-01","Labor day"],
+    ["2014-11-27","Thanksgiving"],
+    ["2014-11-28","Thanksgiving"],
+    ["2014-12-25","Christmas Day"],
+    ["2014-12-26","Christmas Day"],
+    ["2015-01-01","New Year's Day"],
+    ["2015-02-16","President's Day"],
+    ["2015-05-25","Memorial Day"],
+    ["2015-07-03","Independence Day"],
+    ["2015-09-07","Labor Day"],
+    ["2015-11-26","Thanksgiving"],
+    ["2015-11-27","Thanksgiving"],
+    ["2015-12-24","Christmas Eve"],
+    ["2015-12-25","Christmas Day"],
+    ["2016-01-01","New Year's Day"],
+    ["2016-02-15","President's Day"],
+    ["2016-05-30","Memorial Day"],
+    ["2016-07-04","Independence Day"],
+    ["2016-09-05","Labor Day"],
+    ["2016-11-24","Thanksgiving"],
+    ["2016-11-25","Thanksgiving"],
+    ["2016-12-23","Christmas Eve"],
+    ["2016-12-26","Christmas Day"],
+    ["2017-01-02","New Year's Day"],
+    ["2017-02-20","President's Day"],
+    ["2017-05-29","Memorial Day"],
+    ["2017-07-04","Independence Day"],
+    ["2017-09-04","Labor Day"],
+    ["2017-11-23","Thanksgiving"],
+    ["2017-11-24","Thanksgiving"],
+    ["2017-12-22","Christmas Eve"],
+    ["2017-12-25","Christmas Day"],
+    ["2018-01-01","New Year's Day"],
+    ["2018-02-19","President's Day"],
+    ["2018-05-28","Memorial Day"],
+    ["2018-07-04","Independence Day"],
+    ["2018-09-03","Labor Day"],
+    ["2018-11-22","Thanksgiving"],
+    ["2018-11-23","Thanksgiving"],
+    ["2018-12-24","Christmas Eve"],
+    ["2018-12-25","Christmas Day"],
+    ["2019-01-01","New Year's Day"],
+    ["2019-02-18","President's Day"],
+    ["2019-05-27","Memorial Day"],
+    ["2019-07-04","Independence Day"],
+    ["2019-09-02","Labor Day"],
+    ["2019-11-28","Thanksgiving"],
+    ["2019-11-29","Thanksgiving"],
+    ["2019-12-24","Christmas Eve"],
+    ["2019-12-25","Christmas Day"],
+    ["2020-01-01","New Year's Day"],
+    ["2020-02-17","President's Day"],
+    ["2020-05-25","Memorial Day"],
+    ["2020-07-03","Independence Day"],
+    ["2020-09-07","Labor Day"],
+    ["2020-11-26","Thanksgiving"],
+    ["2020-11-27","Thanksgiving"],
+    ["2020-12-24","Christmas Eve"],
+    ["2020-12-25","Christmas Eve"],
+    ["2021-01-01","New Year's Day"],
+    ["2021-01-18","Martin Luther King Jr. Day"],
+    ["2021-02-15","President's Day"],
+    ["2021-05-31","Memorial Day"],
+    ["2021-07-05","Independence Day"],
+    ["2021-09-06","Labor Day"],
+    ["2021-11-25","Thanksgiving"],
+    ["2021-11-26","Thanksgiving"],
+    ["2021-12-24","Christmas Day"],
+    ["2021-12-31","New Year's Day"],
+    ["2022-01-17","Martin Luther King Jr. Day"],
+    ["2022-02-21","President's Day"],
+    ["2022-05-30","Memorial Day"],
+    ["2022-07-04","Independence Day"],
+    ["2022-09-05","Labor Day"],
+    ["2022-11-24","Thanksgiving"],
+    ["2022-11-25","Day after Thanksgiving"],
+    ["2022-12-26","Christmas Day"],
+    ["2023-01-02","New Year's Day"],
+    ["2023-01-16","Martin Luther King Jr. Day"],
+    ["2023-02-20","President's Day"],
+    ["2023-05-29","Memorial Day"],
+    ["2023-07-04","Independence Day"],
+    ["2023-09-04","Labor Day"],
+    ["2023-11-23","Thanksgiving"],
+    ["2023-11-24","Day after Thanksgiving"],
+    ["2023-12-25","Christmas Day"],
+    ["2024-01-01","New Year's Day"],
+    ["2024-01-15","Martin Luther King Jr. Day"],
+    ["2024-02-19","President's Day"],
+    ["2024-05-27","Memorial Day"],
+    ["2024-07-04","Independence Day"],
+    ["2024-09-02","Labor Day"],
+    ["2024-11-28","Thanksgiving"],
+    ["2024-11-29","Day after Thanksgiving"],
+    ["2024-12-25","Christmas Day"],
+    ["2025-01-01","New Year's Day"],
+    ["2025-01-20","Martin Luther King Jr. Day"],
+    ["2025-02-17","President's Day"],
+    ["2025-05-26","Memorial Day"],
+    ["2025-07-04","Independence Day"],
+    ["2025-09-01","Labor Day"],
+    ["2025-11-27","Thanksgiving"],
+    ["2025-11-28","Day after Thanksgiving"],
+    ["2025-12-25","Christmas Day"],
+    ["2026-01-01","New Year's Day"],
+    ["2026-01-19","Martin Luther King Jr. Day"],
+    ["2026-02-16","President's Day"],
+    ["2026-05-25","Memorial Day"],
+    ["2026-07-03","Independence Day (observed)"],
+    ["2026-09-07","Labor Day"],
+    ["2026-11-26","Thanksgiving Day"],
+    ["2026-11-27","Day after Thanksgiving"],
+    ["2026-12-25","Christmas Day"]
+  ];
+
+  const apexEvents = apexDates.map(([date, name]) => {
+    const emoji = /thanksgiving/i.test(name) ? '🦃' :
+      /christmas/i.test(name) ? '🎄' :
+      /new year/i.test(name) ? '🎉' :
+      /independence/i.test(name) ? '🎆' : '📅';
+    return { id: 'apex:calendar:' + date, name, start: date, end: date, emoji };
+  });
 
   function readCustomEvents() {
     try {
-      const stored = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+      const current = localStorage.getItem(storageKey);
+      const stored = JSON.parse(current ?? localStorage.getItem(legacyStorageKey) ?? '[]');
       if (!Array.isArray(stored)) throw new Error('Invalid event list');
-      return stored.filter((event) => event && typeof event.id === 'string' &&
+      const valid = stored.filter((event) => event && typeof event.id === 'string' &&
         typeof event.name === 'string' && validDate(event.start) &&
         validDate(event.end) && event.end >= event.start &&
         emojiOptions.some(([icon]) => event.emoji === icon));
+      if (current !== null) return valid;
+      // Keep personal events while retiring the old Apex calendar and its edits.
+      return valid.filter((event) => typeOf(event) !== 'apex');
     } catch {
       get('notice').textContent = 'Saved events could not be read in this browser.';
       return [];
@@ -349,21 +468,29 @@ header { align-items: center; }
     const now = new Date();
     const today = dateKey(now);
     renderedDay = today;
-    const year = now.getFullYear();
-    const defaults = [year - 1, year, year + 1].flatMap(defaultHolidays);
+    const oldest = dateKey(new Date(now.getFullYear(), now.getMonth() - 12, 1));
     const savedIds = new Set(customEvents.map(({ id }) => id));
-    const events = [...defaults.filter(({ id }) => !savedIds.has(id)), ...customEvents];
+    const events = [...apexEvents.filter(({ id }) => !savedIds.has(id)), ...customEvents];
     const upcoming = events.filter((event) => event.end >= today)
       .sort((a, b) => a.start.localeCompare(b.start));
-    const past = events.filter((event) => event.end < today)
+    const past = events.filter((event) => event.end < today && event.end >= oldest)
       .sort((a, b) => b.end.localeCompare(a.end));
     const [next, ...later] = upcoming;
+    const visible = later.slice(0, 2);
+    const rest = later.slice(2);
 
     get('next').replaceChildren(next ? renderEvent(next, today, true) : element('p', 'muted', 'No upcoming events.'));
-    get('upcoming').replaceChildren(...(later.length ? later.map((event) => renderEvent(event, today)) :
+    get('upcoming').replaceChildren(...(visible.length ? visible.map((event) => renderEvent(event, today)) :
       [element('p', 'muted', 'No additional upcoming events.')]));
+    get('more-upcoming').hidden = !rest.length;
+    get('more-upcoming-title').textContent = 'Show all upcoming events (' + rest.length + ' more)';
+    get('upcoming-rest').replaceChildren(...rest.map((event) => renderEvent(event, today)));
     get('past-title').textContent = 'Past events (' + past.length + ')';
-    get('past').replaceChildren(...past.map((event) => renderEvent(event, today)));
+    const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+    get('past-range').textContent = monthFormat.format(new Date(now.getFullYear(), now.getMonth() - 12, 1)) +
+      ' – ' + monthFormat.format(now);
+    get('past').replaceChildren(...(past.length ? past.map((event) => renderEvent(event, today)) :
+      [element('p', 'muted', 'No past events in this period.')]));
   }
 
   function validateRange() {
@@ -429,7 +556,7 @@ header { align-items: center; }
   });
 
   window.addEventListener('storage', (event) => {
-    if (event.key !== storageKey && event.key !== null) return;
+    if (event.key !== storageKey && event.key !== legacyStorageKey && event.key !== null) return;
     customEvents = readCustomEvents();
     render();
   });
