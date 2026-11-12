@@ -148,6 +148,12 @@
       <label>Start date <input id="start" type="date" required></label>
       <label>End date <small>Optional, for a date range</small><input id="end" type="date"></label>
     </div>
+    <label>Event type
+      <select id="event-type">
+        <option value="personal">Personal Countdown</option>
+        <option value="apex">Apex Holiday</option>
+      </select>
+    </label>
     <label>Emoji <select id="emoji"></select></label>
     <p id="form-error" class="message" role="alert"></p>
     <div class="actions">
@@ -172,6 +178,7 @@
   const start = get('start');
   const end = get('end');
   const emoji = get('emoji');
+  const eventType = get('event-type');
   let editingId = null;
 
   function dateKey(date) {
@@ -248,8 +255,12 @@
     return node;
   }
 
-  function isApex(event) {
+  function isBuiltIn(event) {
     return event.id.startsWith('apex:');
+  }
+
+  function typeOf(event) {
+    return event.type ?? (isBuiltIn(event) ? 'apex' : 'personal');
   }
 
   function renderEvent(event, today, featured = false) {
@@ -263,7 +274,7 @@
     copy.append(
       element(featured ? 'h2' : 'h3', '', event.name),
       element('p', 'date', dateText(event)),
-      element('span', 'event-type', isApex(event) ? 'Apex Holiday' : 'Personal Countdown')
+      element('span', 'event-type', typeOf(event) === 'apex' ? 'Apex Holiday' : 'Personal Countdown')
     );
 
     const count = element('div', 'count');
@@ -282,7 +293,7 @@
     edit.addEventListener('click', () => openEditor(event));
     manage.append(edit);
 
-    if (!isApex(event)) {
+    if (!isBuiltIn(event)) {
       const remove = element('button', '', 'Delete');
       remove.setAttribute('aria-label', 'Delete ' + event.name);
       remove.addEventListener('click', () => {
@@ -337,6 +348,7 @@
     start.value = event?.start ?? dateKey(new Date());
     end.value = event && event.end !== event.start ? event.end : '';
     emoji.value = event?.emoji ?? '📅';
+    eventType.value = event ? typeOf(event) : 'personal';
     get('form-error').textContent = '';
     validateRange();
     dialog.showModal();
@@ -365,7 +377,14 @@
       get('form-error').textContent = 'Choose valid dates with four-digit years.';
       return;
     }
-    const saved = { id: editingId ?? crypto.randomUUID(), name, start: start.value, end: end.value || start.value, emoji: emoji.value };
+    const saved = {
+      id: editingId ?? crypto.randomUUID(),
+      name,
+      start: start.value,
+      end: end.value || start.value,
+      emoji: emoji.value,
+      type: eventType.value
+    };
     const events = [...customEvents.filter(({ id }) => id !== saved.id), saved];
     if (!saveCustomEvents(events)) {
       get('form-error').textContent = 'This browser could not save your event.';
