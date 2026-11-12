@@ -116,13 +116,43 @@
     .hero .event-main { grid-template-columns: auto minmax(0, 1fr); }
     .hero .count { grid-column: 2; text-align: left; }
   }
+.brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: clamp(3rem, 9vw, 4.25rem);
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  background: var(--violet);
+  border-bottom: 3px solid var(--orange);
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -.07em;
+}
+
+.brand-heading h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 6vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -.065em;
+}
+
+header { align-items: center; }
 </style>
 </head>
 <body>
 <main>
   <a href="/">← Personal Hub</a>
   <header>
-    <h1>Holiday Countdown</h1>
+    <div class="brand-heading"><span class="brand-mark" aria-hidden="true">HC</span><h1>Holiday Countdown</h1></div>
     <button class="primary" id="add" type="button">+ Add event</button>
   </header>
   <section id="next" class="hero" aria-label="Next event"></section>
