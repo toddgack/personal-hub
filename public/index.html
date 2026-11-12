@@ -113,19 +113,19 @@
       color: var(--muted);
     }
 
-    .card .launch {
-      display: inline-block;
-      margin-top: auto;
-      padding-top: 1rem;
-      color: var(--accent);
-      font-weight: 650;
-      text-underline-offset: .25em;
+    a.card {
+      color: inherit;
+      text-decoration: none;
     }
 
-    .launch:focus-visible {
+    a.card:hover {
+      border-color: var(--violet);
+      background: color-mix(in srgb, var(--surface) 85%, var(--violet));
+    }
+
+    a.card:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 4px;
-      border-radius: .125rem;
     }
   </style>
 </head>
@@ -139,31 +139,28 @@
     <section aria-labelledby="projects-title">
       <h2 id="projects-title">Projects</h2>
       <div class="projects">
-        <article class="card">
+        <a class="card" href="/parent-loan" aria-labelledby="parent-loan-title">
           <span class="status">Available</span>
-          <h3>Parent Loan</h3>
+          <h3 id="parent-loan-title">Parent Loan</h3>
           <p>Track payoff progress and upcoming payments.</p>
-          <a class="launch" href="/parent-loan">Open Parent Loan</a>
-        </article>
-        <article class="card">
+        </a>
+        <a class="card" href="/holidays" aria-labelledby="holidays-title">
           <span class="status">Available</span>
-          <h3>Holiday Countdown</h3>
+          <h3 id="holidays-title">Holiday Countdown</h3>
           <p>Count down to holidays and family events.</p>
-          <a class="launch" href="/holidays">Open Holiday Countdown</a>
-        </article>
-        <!-- Copy a card to add a project. Add a launch link after the description when its URL is ready. -->
+        </a>
+        <!-- Copy an available card for an app with a URL, or a pending card for a project without one. -->
         <article class="card">
           <span class="status">Link pending</span>
           <h3>Madden NFL 27 Analytics</h3>
           <p>Track Chicago Bears player ratings and compare changes over time.</p>
         </article>
 
-        <article class="card">
+        <a class="card" href="/pto" aria-labelledby="pto-title">
           <span class="status">Available</span>
-          <h3>PTO Tracker</h3>
+          <h3 id="pto-title">PTO Tracker</h3>
           <p>Log hours taken and see your projected PTO balance.</p>
-          <a class="launch" href="/pto">Open PTO Tracker</a>
-        </article>
+        </a>
       </div>
     </section>
   </main>
