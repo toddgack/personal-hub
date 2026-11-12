@@ -12,8 +12,7 @@
     --border: #45275b;
     --violet: #6F2DA8;
     --lavender: #d3b8ff;
-    --orange: #E64100;
-    --peach: #ffc3a9;
+    --orange: #C83803;
     --text: #f5f2fa;
     --muted: #b8b0c3;
   }
@@ -75,9 +74,10 @@
   .eyebrow { color: var(--lavender); font-size: .75rem; font-weight: 700; margin-bottom: .25rem; }
   .date, .muted { color: var(--muted); font-size: .875rem; }
   .date { margin-top: .25rem; }
-  .count { color: var(--peach); font-size: .875rem; font-weight: 700; text-align: right; }
+  .event-type { display: inline-block; margin-top: .3rem; font-size: .72rem; color: var(--lavender); }
+  .count { color: var(--muted); font-size: .875rem; font-weight: 700; text-align: right; }
   .hero .count { padding-inline-start: .75rem; border-inline-start: 2px solid var(--orange); }
-  .count strong { display: block; font-size: 1.4rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .count strong { display: block; color: var(--orange); font-size: 1.4rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .hero .count strong { font-size: clamp(1.6rem, 6vw, 3.25rem); }
   section + section, details { margin-top: 1.75rem; }
   .events { display: grid; gap: .6rem; margin-top: .65rem; }
@@ -85,7 +85,7 @@
   summary { cursor: pointer; }
   .manage { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0 3.2rem; }
   .manage button { font-size: .8rem; padding: .25rem .6rem; }
-  .message { margin-top: .5rem; color: var(--peach); }
+  .message { margin-top: .5rem; color: var(--text); border-inline-start: 2px solid var(--orange); padding-inline-start: .5rem; }
   .message:empty { display: none; }
   dialog {
     width: min(100% - 2rem, 29rem);
@@ -211,7 +211,7 @@
       ['Christmas Day', '12-25', '🎄']
     ].map(([name, monthDay, icon]) => {
       const date = year + '-' + monthDay;
-      return { name, start: date, end: date, emoji: icon };
+      return { id: 'apex:' + date, name, start: date, end: date, emoji: icon };
     });
   }
 
@@ -248,6 +248,10 @@
     return node;
   }
 
+  function isApex(event) {
+    return event.id.startsWith('apex:');
+  }
+
   function renderEvent(event, today, featured = false) {
     const row = element('article', featured ? '' : 'event');
     const icon = element('span', 'emoji', event.emoji);
@@ -256,7 +260,11 @@
     const startsIn = dayNumber(event.start) - dayNumber(today);
     const endedAgo = dayNumber(today) - dayNumber(event.end);
     if (featured) copy.append(element('p', 'eyebrow', startsIn < 0 ? 'Happening now' : 'Next event'));
-    copy.append(element(featured ? 'h2' : 'h3', '', event.name), element('p', 'date', dateText(event)));
+    copy.append(
+      element(featured ? 'h2' : 'h3', '', event.name),
+      element('p', 'date', dateText(event)),
+      element('span', 'event-type', isApex(event) ? 'Apex Holiday' : 'Personal Countdown')
+    );
 
     const count = element('div', 'count');
     if (endedAgo > 0) count.textContent = endedAgo + (endedAgo === 1 ? ' day ago' : ' days ago');
@@ -268,13 +276,15 @@
     layout.append(icon, copy, count);
     row.append(layout);
 
-    if (event.id) {
-      const manage = element('div', 'manage');
-      const edit = element('button', '', 'Edit');
+    const manage = element('div', 'manage');
+    const edit = element('button', '', 'Edit');
+    edit.setAttribute('aria-label', 'Edit ' + event.name);
+    edit.addEventListener('click', () => openEditor(event));
+    manage.append(edit);
+
+    if (!isApex(event)) {
       const remove = element('button', '', 'Delete');
-      edit.setAttribute('aria-label', 'Edit ' + event.name);
       remove.setAttribute('aria-label', 'Delete ' + event.name);
-      edit.addEventListener('click', () => openEditor(event));
       remove.addEventListener('click', () => {
         if (!window.confirm('Delete “' + event.name + '”?')) return;
         if (saveCustomEvents(customEvents.filter(({ id }) => id !== event.id))) {
@@ -285,9 +295,9 @@
           get('notice').textContent = 'The event could not be deleted from browser storage.';
         }
       });
-      manage.append(edit, remove);
-      row.append(manage);
+      manage.append(remove);
     }
+    row.append(manage);
     return row;
   }
 
@@ -297,7 +307,9 @@
     const today = dateKey(now);
     renderedDay = today;
     const year = now.getFullYear();
-    const events = [...defaultHolidays(year - 1), ...defaultHolidays(year), ...defaultHolidays(year + 1), ...customEvents];
+    const defaults = [year - 1, year, year + 1].flatMap(defaultHolidays);
+    const savedIds = new Set(customEvents.map(({ id }) => id));
+    const events = [...defaults.filter(({ id }) => !savedIds.has(id)), ...customEvents];
     const upcoming = events.filter((event) => event.end >= today)
       .sort((a, b) => a.start.localeCompare(b.start));
     const past = events.filter((event) => event.end < today)
@@ -354,7 +366,7 @@
       return;
     }
     const saved = { id: editingId ?? crypto.randomUUID(), name, start: start.value, end: end.value || start.value, emoji: emoji.value };
-    const events = editingId ? customEvents.map((item) => item.id === editingId ? saved : item) : [...customEvents, saved];
+    const events = [...customEvents.filter(({ id }) => id !== saved.id), saved];
     if (!saveCustomEvents(events)) {
       get('form-error').textContent = 'This browser could not save your event.';
       return;
