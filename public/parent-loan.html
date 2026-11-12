@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parent Loan Dashboard</title>
+<style>
+  :root { color-scheme: dark; --bg:#09080c; --panel:#17111f; --edge:#45275b; --violet:#6f2da8; --orange:#c83803; --text:#f5f2fa; --muted:#bdb2c9; --lavender:#d3b8ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(ellipse 60rem 30rem at 45% 0%,#251435,transparent),var(--bg); color:var(--text); font:1rem/1.5 system-ui,sans-serif; }
+  main { width:min(100% - 2rem,65rem); margin:auto; padding:clamp(1.5rem,5vw,4.5rem) 0; }
+  a { color:var(--lavender); text-underline-offset:.2em; }
+  .back { display:inline-block; margin-bottom:1.2rem; }
+  .setup { margin-bottom:1rem; }
+  .setup form { display:grid; gap:.8rem; margin-top:1rem; max-width:27rem; }
+  .setup label { display:grid; gap:.25rem; font-weight:600; }
+  input,button { font:inherit; color:inherit; padding:.55rem .75rem; border:1px solid var(--edge); border-radius:.45rem; background:var(--bg); }
+  button { cursor:pointer; }
+  button[type="submit"] { background:var(--violet); font-weight:700; }
+  #edit { margin-top:.9rem; }
+  #error:empty { display:none; }
+  h1,h2,p,dl,dd { margin:0; }
+  h1 { font-size:clamp(2.35rem,6vw,4rem); line-height:1.02; letter-spacing:-.065em; }
+  h2 { font-size:1.12rem; }
+  header { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+  .mark { display:grid; place-items:center; flex:0 0 auto; width:clamp(3rem,9vw,4.25rem); aspect-ratio:1; border-radius:1rem; background:var(--violet); border-bottom:3px solid var(--orange); font-size:1.3rem; font-weight:800; letter-spacing:-.07em; }
+  .muted,dt,th { color:var(--muted); }
+  header p { margin-top:.3rem; }
+  .overview { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:.85rem; }
+  .panel { padding:clamp(1rem,3vw,1.6rem); border:1px solid var(--edge); border-radius:1rem; background:var(--panel); min-width:0; }
+  .balance { border-inline-start:.3rem solid var(--orange); background:linear-gradient(120deg,#301947,var(--panel)); }
+  .balance strong { display:block; font-size:clamp(2.6rem,9vw,5rem); font-weight:770; line-height:1.1; letter-spacing:-.075em; margin:.12rem 0 .55rem; }
+  dd,strong,td { font-variant-numeric:tabular-nums; }
+  .progress-label { display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem; margin:1.2rem 0 .4rem; }
+  .progress-label span { color:var(--lavender); font-weight:700; }
+  progress { display:block; width:100%; height:.55rem; border:0; border-radius:1rem; overflow:hidden; background:#332340; color:var(--violet); }
+  progress::-webkit-progress-bar { background:#332340; }
+  progress::-webkit-progress-value { background:var(--violet); }
+  progress::-moz-progress-bar { background:var(--violet); }
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; margin-top:1rem; }
+  .split dt,.milestones dt { font-size:.82rem; }
+  .split dd,.milestones dd { font-weight:700; }
+  .milestones { display:grid; gap:1rem; margin-top:.8rem; }
+  .milestones > div + div { border-top:1px solid var(--edge); padding-top:.8rem; }
+  .milestones dd { font-size:clamp(1.15rem,3vw,1.45rem); }
+  section.schedule { margin-top:1.55rem; }
+  .section-head { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:.3rem .8rem; margin-bottom:.65rem; }
+  .section-head p { font-size:.86rem; }
+  .ledger { padding:0; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { padding:.7rem clamp(.4rem,2.5vw,1.25rem); text-align:right; }
+  th:first-child,td:first-child { text-align:left; }
+  thead th { font-size:.78rem; font-weight:600; background:#21152c; }
+  tbody tr { border-top:1px solid var(--edge); }
+  tbody td { font-size:.9rem; }
+  tbody tr[data-next] { background:#241730; }
+  .next-tag { color:var(--lavender); margin-inline-start:.45rem; font-size:.72rem; font-weight:700; white-space:nowrap; }
+  details { margin-top:.7rem; }
+  summary { cursor:pointer; font-weight:650; }
+  details .ledger { margin-top:.7rem; }
+  footer { margin-top:1rem; font-size:.82rem; color:var(--muted); }
+  :focus-visible { outline:2px solid var(--lavender); outline-offset:3px; }
+  @media (max-width:680px) { .overview { grid-template-columns:1fr; } .milestones { grid-template-columns:repeat(2,minmax(0,1fr)); } .milestones > div + div { border-top:0; padding-top:0; } }
+  @media (max-width:380px) { .next-tag { display:block; margin-inline-start:0; } }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← Personal Hub</a>
+  <header>
+    <span class="mark" aria-hidden="true">PL</span>
+    <div><h1>Parent Loan</h1><p class="muted" id="terms"></p></div>
+  </header>
+  <section id="setup" class="panel setup" aria-labelledby="setup-title" hidden>
+    <h2 id="setup-title">Set up your loan</h2>
+    <p class="muted">Enter the terms once. They are saved in this browser.</p>
+    <form id="loan-form">
+      <label>Original loan amount <input id="loan-amount" type="number" min=".01" max="10000000" step=".01" required></label>
+      <label>Biweekly payment <input id="loan-payment" type="number" min=".01" max="10000000" step=".01" required></label>
+      <label>First scheduled payment <input id="loan-first" type="date" min="1900-01-01" max="2199-12-31" required></label>
+      <p id="error" role="alert"></p>
+      <button type="submit">Save loan terms</button>
+    </form>
+  </section>
+  <div id="dashboard" hidden>
+  <div class="overview">
+    <section class="panel balance" aria-labelledby="remaining-title">
+      <h2 id="remaining-title">Remaining balance</h2>
+      <strong id="remaining"></strong>
+      <div class="progress-label"><h2 id="progress-title">Payoff progress</h2><span id="percent"></span></div>
+      <progress id="progress" aria-labelledby="progress-title" max="100"></progress>
+      <dl class="split">
+        <div><dt>Original loan</dt><dd id="original"></dd></div>
+        <div><dt>Paid to date</dt><dd id="paid"></dd></div>
+      </dl>
+    </section>
+    <section class="panel" aria-labelledby="timeline-title">
+      <h2 id="timeline-title">Payment timeline</h2>
+      <dl class="milestones">
+        <div><dt>Next payment</dt><dd id="next"></dd></div>
+        <div><dt>Final scheduled payment</dt><dd id="final"></dd></div>
+        <div><dt>Payments counted</dt><dd id="counted"></dd></div>
+        <div><dt>Payments left</dt><dd id="left"></dd></div>
+      </dl>
+    </section>
+  </div>
+  <section class="schedule" aria-labelledby="upcoming-title">
+    <div class="section-head">
+      <h2 id="upcoming-title">Upcoming payments</h2>
+      <p class="muted" id="as-of"></p>
+    </div>
+    <div id="upcoming"></div>
+    <details id="more" class="panel" hidden><summary id="more-title">More upcoming payments</summary><div id="more-list"></div></details>
+    <details id="history" class="panel" hidden><summary id="history-title">Past payments</summary><div id="history-list"></div></details>
+  </section>
+  <footer>Balances follow the workbook’s schedule. Each payment counts one day before its scheduled date.</footer>
+  <button id="edit" type="button">Edit loan terms</button>
+  </div>
+  <noscript>Enable JavaScript to calculate the payment schedule.</noscript>
+</main>
+<script>
+  const storageKey = 'personal-hub.parent-loan.v1';
+  let loan;
+  const dayMs = 86400000;
+  const currency = new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:0, maximumFractionDigits:2 });
+  const dates = new Intl.DateTimeFormat('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' });
+  const get = (id) => document.getElementById(id);
+  const formatDate = (day) => dates.format(day * dayMs);
+
+  function localDay() {
+    const now = new Date();
+    return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / dayMs;
+  }
+
+  function validate(terms) {
+    if (!terms || !Number.isSafeInteger(terms.original) || !Number.isSafeInteger(terms.payment) ||
+        terms.original <= 0 || terms.payment <= 0 || terms.original > 1000000000 || terms.payment > 1000000000 ||
+        typeof terms.first !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(terms.first) ||
+        terms.first < '1900-01-01' || terms.first > '2199-12-31' ||
+        !Number.isFinite(Date.parse(terms.first)) ||
+        new Date(terms.first).toISOString().slice(0,10) !== terms.first ||
+        Math.ceil(terms.original / terms.payment) > 2000) throw new Error('Invalid loan terms');
+    return terms;
+  }
+
+  const money = (cents) => currency.format(cents / 100);
+
+  function calculate(today) {
+    const first = Date.parse(loan.first + 'T00:00:00Z') / dayMs;
+    const count = Math.ceil(loan.original / loan.payment);
+    const schedule = Array.from({ length:count }, (_, i) => ({
+      day:first + i * 14,
+      amount:Math.min(loan.payment, loan.original - i * loan.payment),
+      balance:Math.max(0, loan.original - (i + 1) * loan.payment)
+    }));
+    const counted = schedule.filter(row => row.day < today + 2);
+    const upcoming = schedule.slice(counted.length);
+    const paid = loan.original - (counted.at(-1)?.balance ?? loan.original);
+    return { count, counted, upcoming, paid, remaining:loan.original - paid, final:schedule.at(-1), percent:paid / loan.original * 100 };
+  }
+
+  function element(tag, text) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function ledger(rows, label, highlight = false) {
+    const wrapper = element('div');
+    wrapper.className = 'panel ledger';
+    const table = element('table');
+    table.setAttribute('aria-label', label);
+    const header = element('tr');
+    for (const name of ['Pay date', 'Payment', 'Balance after']) {
+      const heading = element('th', name);
+      heading.scope = 'col';
+      header.append(heading);
+    }
+    const thead = element('thead');
+    thead.append(header);
+    const body = element('tbody');
+    rows.forEach((payment, i) => {
+      const row = element('tr');
+      const date = element('td', formatDate(payment.day));
+      if (highlight && i === 0) {
+        row.dataset.next = '';
+        const tag = element('span', 'Next');
+        tag.className = 'next-tag';
+        date.append(tag);
+      }
+      row.append(date, element('td', money(payment.amount)), element('td', money(payment.balance)));
+      body.append(row);
+    });
+    table.append(thead, body);
+    wrapper.append(table);
+    return wrapper;
+  }
+
+  let renderedDay;
+  function render() {
+    const today = localDay();
+    renderedDay = today;
+    const state = calculate(today);
+    const show = (id, text) => { get(id).textContent = text; };
+    show('terms', money(loan.payment) + ' every two weeks');
+    show('remaining', money(state.remaining));
+    show('original', money(loan.original));
+    show('paid', money(state.paid));
+    show('percent', state.percent.toFixed(1).replace(/\.0$/, '') + '% complete');
+    get('progress').value = state.percent;
+    show('next', state.upcoming.length ? formatDate(state.upcoming[0].day) : 'Paid off on schedule');
+    show('final', formatDate(state.final.day));
+    show('counted', state.counted.length + ' of ' + state.count);
+    show('left', state.upcoming.length);
+    show('as-of', 'As of ' + formatDate(today));
+    get('upcoming').replaceChildren(state.upcoming.length ? ledger(state.upcoming.slice(0,6), 'Upcoming payments', true) : element('p','All scheduled payments have been counted.'));
+    get('more').hidden = state.upcoming.length <= 6;
+    if (state.upcoming.length > 6) {
+      show('more-title', 'More upcoming payments (' + (state.upcoming.length - 6) + ')');
+      get('more-list').replaceChildren(ledger(state.upcoming.slice(6), 'More upcoming payments'));
+    }
+    get('history').hidden = !state.counted.length;
+    if (state.counted.length) {
+      show('history-title', 'Past payments (' + state.counted.length + ')');
+      get('history-list').replaceChildren(ledger([...state.counted].reverse(), 'Past payments'));
+    }
+  }
+  function showSetup() {
+    get('setup').hidden = false;
+    if (!loan) return;
+    get('loan-amount').value = loan.original / 100;
+    get('loan-payment').value = loan.payment / 100;
+    get('loan-first').value = loan.first;
+    get('loan-amount').focus();
+  }
+
+  function showDashboard() {
+    get('setup').hidden = true;
+    get('dashboard').hidden = false;
+    render();
+  }
+
+  get('loan-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const terms = {
+      original:Math.round(get('loan-amount').valueAsNumber * 100),
+      payment:Math.round(get('loan-payment').valueAsNumber * 100),
+      first:get('loan-first').value
+    };
+    try { validate(terms); }
+    catch {
+      get('error').textContent = 'Enter valid loan terms with no more than 2,000 scheduled payments.';
+      return;
+    }
+    try { localStorage.setItem(storageKey, JSON.stringify(terms)); }
+    catch {
+      get('error').textContent = 'This browser could not save the loan terms.';
+      return;
+    }
+    get('error').textContent = '';
+    loan = terms;
+    showDashboard();
+    get('edit').focus();
+  });
+  get('edit').addEventListener('click', showSetup);
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) loan = validate(JSON.parse(saved));
+  } catch {
+    get('error').textContent = 'Saved loan terms could not be read. Enter them again to restore your dashboard.';
+  }
+  if (loan) showDashboard();
+  else showSetup();
+  setInterval(() => { if (loan && localDay() !== renderedDay) render(); }, 30000);
+</script>
+</body>
+</html>
