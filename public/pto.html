@@ -174,9 +174,24 @@
     return data;
   }
 
+  const workbookData = {
+    "version": 1,
+    "firstAccrual": "2025-10-25",
+    "openingHours": 103.04,
+    "earnedHours": 4.616,
+    "taken": {
+      "2025-11-22": 8,
+      "2025-12-20": 8,
+      "2026-02-14": 64,
+      "2026-03-28": 8,
+      "2026-08-01": 16,
+      "2026-10-24": 64
+    }
+  };
+
   function read() {
     const json = localStorage.getItem(key);
-    return json === null ? null : validate(JSON.parse(json));
+    return json === null ? validate(structuredClone(workbookData)) : validate(JSON.parse(json));
   }
 
   function notice(message) { get('notice').textContent = message; }
