@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#170c22">
-  <title>Weekly Overview · Personal Hub</title>
+  <title>Violet’s Weekly Overview · Personal Hub</title>
   <link rel="stylesheet" href="/app-theme.css">
   <style>
     :root { color-scheme: dark; --ink: #fff6ff; --muted: #d2bfd8; --lavender: #debaff; --peach: #ffbd9e; --line: #e2c9f147; }
@@ -30,19 +30,22 @@
     button:disabled { opacity: .48; cursor: default; }
     :focus-visible { outline: 2px solid var(--lavender); outline-offset: 3px; }
     label { display: grid; gap: .28rem; font-weight: 650; font-size: .85rem; }
-    .cards { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: .75rem; }
-    .weekly-page .stat { min-height: 9.6rem; display: flex; flex-direction: column; justify-content: center; gap: .2rem; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+    .cards .age-card { grid-column: 1 / -1; }
+    .weekly-page .stat { display: flex; flex-direction: column; justify-content: center; gap: .2rem; }
     .weekly-page .age-card { background: linear-gradient(120deg, #492368, #271533); }
     .weekly-page .size-card { background: linear-gradient(140deg, #4b2541, #24162d); }
     .weekly-page .count-card { background: linear-gradient(140deg, #542e26, #2a172d); }
     .eyebrow { color: var(--lavender); font-size: .78rem; font-weight: 750; }
     .count-card .eyebrow, .fact .eyebrow { color: var(--peach); }
-    .stat strong { font-size: clamp(1.6rem, 4vw, 2.65rem); line-height: 1.12; letter-spacing: -.06em; }
+    .stat strong { font-size: clamp(1.4rem, 4.5vw, 2.3rem); line-height: 1.1; letter-spacing: -.05em; }
+    .age-card strong { font-size: clamp(2rem, 7vw, 3.1rem); }
+    .week-controls select { max-width: 100%; }
     .stat .sub { font-size: .88rem; color: #e7d7ea; }
     .feeding-note { margin: .65rem .1rem 0; }
     .story { margin-top: 1.6rem; }
     .story > h2 { margin: 0 0 .65rem .1rem; }
-    .story-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: .75rem; }
+    .story-grid { display: grid; grid-template-columns: 1fr; gap: .65rem; }
     .story h3 { margin: .28rem 0 .45rem; }
     .story p + p { margin-top: .35rem; }
     .story ul { padding-left: 1.15rem; }
@@ -51,22 +54,21 @@
     .weekly-page .fact { background: linear-gradient(130deg, #44243a, #25172f); }
     .sources { margin-top: 1.25rem; font-size: .85rem; }
     details summary { cursor: pointer; font-weight: 650; }
-    .sources p, #settings form { margin-top: .65rem; }
+    .sources p, .care details p { margin-top: .6rem; }
     .sources ul { padding-left: 1.12rem; margin-top: .4rem; }
-    #settings { max-width: 33rem; }
-    #settings form { display: grid; gap: .75rem; }
-    #settings form p { margin: 0; }
-    .settings-action { margin-top: .8rem; }
-    #profile-error { color: var(--peach); }
-    #profile-error:empty { display: none; }
-    @media (max-width: 650px) {
-      .cards { grid-template-columns: 1fr 1fr; gap: .6rem; }
-      .cards .age-card { grid-column: 1 / -1; min-height: auto; }
-      .weekly-page .stat { min-height: 7.7rem; }
-      .story-grid { grid-template-columns: 1fr; gap: .6rem; }
-      .story-stack { gap: .6rem; }
+    .care { margin-top: 1.4rem; }
+    .care > h2 { margin: 0 0 .65rem .1rem; }
+    .care details + details { margin-top: .45rem; }
+    .care details { padding: .8rem .9rem; }
+    .care summary { min-height: 1.45rem; }
+    .weekly-page details.callout { border-inline-start: 3px solid var(--orange); }
+    .section-label { grid-column: 1 / -1; margin: .3rem .1rem 0; }
+    .weekly-page .diaper-card { background: linear-gradient(145deg, #36264b, #22172e); }
+    .weekly-page .rest-card { background: linear-gradient(145deg, #39233e, #25172e); }
+    @media (min-width: 700px) {
+      .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .story-grid { grid-template-columns: 1.1fr 1fr; }
     }
-    @media (max-width: 380px) { .week-controls button { flex: 1 1 auto; } }
   </style>
 </head>
 <body class="hub-app weekly-page">
@@ -75,21 +77,10 @@
     <a href="/">← Personal Hub</a>
     <header>
       <span class="mark" aria-hidden="true">✦</span>
-      <h1 id="title">Weekly Overview</h1>
+      <h1>Violet’s Weekly Overview</h1>
     </header>
 
-    <section class="panel" id="settings" aria-labelledby="settings-title" hidden>
-      <h2 id="settings-title">Set up your weekly overview</h2>
-      <form id="profile-form">
-        <label>First name <input type="text" id="name" maxlength="30" required></label>
-        <label>Birthdate <input type="date" id="birthday" min="1900-01-01" required></label>
-        <p class="muted small">These details are saved in this browser so the overview can open to the current week.</p>
-        <p role="alert" id="profile-error"></p>
-        <div><button class="primary" type="submit">Save and open overview</button> <button type="button" id="cancel" hidden>Cancel</button></div>
-      </form>
-    </section>
-
-    <div id="dashboard" hidden>
+    <div id="dashboard">
       <div class="week-controls" aria-label="Week navigation">
         <label>Choose a week <select id="week"></select></label>
         <button type="button" id="previous" aria-label="Previous week">←</button>
@@ -103,6 +94,7 @@
           <strong id="age"></strong>
           <p class="sub" id="dates"></p>
         </section>
+        <h2 class="section-label">The daily numbers</h2>
         <section class="panel stat size-card">
           <h2 class="eyebrow">Bottle size · formula</h2>
           <strong id="size"></strong>
@@ -113,11 +105,31 @@
           <strong id="count"></strong>
           <p class="sub" id="count-note"></p>
         </section>
+        <section class="panel stat diaper-card">
+          <h2 class="eyebrow">Wet diapers · 24 h</h2>
+          <strong id="wet"></strong>
+          <p class="sub" id="wet-note"></p>
+        </section>
+        <section class="panel stat diaper-card">
+          <h2 class="eyebrow">Poops · formula</h2>
+          <strong id="poop"></strong>
+          <p class="sub" id="poop-note"></p>
+        </section>
+        <section class="panel stat rest-card">
+          <h2 class="eyebrow">Sleep · 24 h</h2>
+          <strong id="sleep"></strong>
+          <p class="sub" id="sleep-note"></p>
+        </section>
+        <section class="panel stat rest-card">
+          <h2 class="eyebrow">Tummy time</h2>
+          <strong id="tummy"></strong>
+          <p class="sub" id="tummy-note"></p>
+        </section>
       </div>
-      <p class="muted small feeding-note">General formula guides. Follow hunger and fullness cues and any feeding plan from your pediatrician.</p>
+      <p class="muted small feeding-note">These are age-based guides. Bottle numbers are for formula. Follow Violet’s cues and any feeding plan from her pediatrician.</p>
 
       <section class="story" aria-labelledby="story-title">
-        <h2 id="story-title">This week</h2>
+        <h2 id="story-title">This week with Violet</h2>
         <div class="story-grid">
           <section class="panel">
             <p class="eyebrow">Milestones to notice</p>
@@ -140,6 +152,30 @@
         </div>
       </section>
 
+      <section class="care" aria-labelledby="care-title">
+        <h2 id="care-title">Worth knowing</h2>
+        <details class="panel">
+          <summary>Feeding cues and growth</summary>
+          <p id="feeding-cues"></p>
+          <p id="growth"></p>
+        </details>
+        <details class="panel">
+          <summary>What a diaper can tell you</summary>
+          <p id="diaper-detail"></p>
+          <p id="stool-detail"></p>
+        </details>
+        <details class="panel">
+          <summary>Sleep and play</summary>
+          <p>For sleep, place her on her back on a firm, flat surface with an empty sleep space. Tummy time is for awake, supervised play.</p>
+          <p id="play-detail"></p>
+        </details>
+        <details class="panel callout" id="callout" open>
+          <summary>When to call the pediatrician</summary>
+          <p id="fever"></p>
+          <p>Call about poor feeding, fewer wet diapers than usual, or a stool that’s bloody, white or clay-colored, or black and tarry after the newborn transition.</p>
+        </details>
+      </section>
+
       <details class="panel sources">
         <summary>Sources and age ranges</summary>
         <p id="feeding-source-note"></p>
@@ -149,15 +185,19 @@
           <li><a href="https://www.healthychildren.org/English/tips-tools/symptom-checker/IFrame/Pages/SymptomViewer.aspx?symptom=Bottle-Feeding%20%28Formula%29%20Questions">AAP bottle size examples by age</a></li>
           <li><a href="https://www.cdc.gov/infant-toddler-nutrition/mealtime/signs-your-child-is-hungry-or-full.html">CDC hunger and fullness cues</a></li>
           <li><a href="https://www.healthychildren.org/English/ages-stages/baby/Pages/How-Your-Newborn-Behaves.aspx">AAP newborn senses and behavior</a></li>
+          <li><a href="https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/how-often-and-how-much-should-your-baby-eat.aspx">AAP diaper and feeding patterns</a></li>
+          <li><a href="https://www.healthychildren.org/English/ages-stages/baby/diapers-clothing/Pages/Infant-Constipation.aspx">AAP infant stool frequency</a> · <a href="https://www.healthychildren.org/English/ages-stages/baby/diapers-clothing/Pages/Diarrhea-in-Babies.aspx">stool color and texture</a></li>
+          <li><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Getting-Your-Baby-to-Sleep.aspx">AAP newborn sleep</a> · <a href="https://aasm.org/resources/pdf/pressroom/pediatric-sleep-duration-consensus.pdf">AASM sleep by age</a></li>
+          <li><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Back-to-Sleep-Tummy-to-Play.aspx">AAP safe sleep and tummy time</a></li>
+          <li><a href="https://www.healthychildren.org/English/ages-stages/baby/pages/First-Month-Physical-Appearance-and-Growth.aspx">AAP first-month growth</a> · <a href="https://www.healthychildren.org/English/health-issues/conditions/fever/Pages/fever-and-your-baby.aspx">AAP fever guidance</a></li>
           <li><a id="development-source" href="https://www.cdc.gov/act-early/milestones/">Development and activity source</a></li>
         </ul>
       </details>
-      <button class="settings-action" type="button" id="edit">Edit baby details</button>
     </div>
     <noscript>This overview uses JavaScript to calculate the current week.</noscript>
   </main>
   <script>
-    const storageKey = 'personal-hub.weekly-overview.v1';
+    const birthDate = '2026-10-25';
     const dayMs = 86400000;
     const arizona = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/Phoenix', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -265,20 +305,14 @@
       }
     ];
 
-    let profile;
     let selectedWeek;
     let followsToday = true;
     let lastDay;
+    let lastSafetyWeek;
 
     function dayInArizona(date = new Date()) {
       const parts = Object.fromEntries(arizona.formatToParts(date).map(({type,value}) => [type,value]));
       return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) / dayMs;
-    }
-
-    function parseBirthday(value) {
-      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '1900-01-01') return null;
-      const parsed = Date.parse(value + 'T00:00:00Z');
-      return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0,10) === value ? parsed / dayMs : null;
     }
 
     function sunday(day) { return day - new Date(day * dayMs).getUTCDay(); }
@@ -303,6 +337,26 @@
       return ['Varies', 'Formula intake shifts as solids grow', 'Varies', 'Milk and solids shape the day'];
     }
 
+    function dailyCare(birth, day) {
+      const age = day - birth;
+      const newborn = day < monthAt(birth, 1);
+      const beforeFourMonths = day < monthAt(birth, 4);
+      const afterFirstBirthday = day >= monthAt(birth, 12);
+      const wet = age < 5
+        ? ['Rising', 'By day 5, look for at least 5–6']
+        : ['5–6+', 'Common minimum guide per day'];
+      const poop = age < 5 ? ['Varies', 'Dark first stools turn lighter'] :
+        afterFirstBirthday ? ['Varies', 'Watch her usual pattern'] :
+        ['Most days', newborn ? 'Often at least 1 with formula' : 'Often daily with formula'];
+      const sleep = newborn ? ['~16–17 h', 'In short stretches, naps included'] :
+        beforeFourMonths ? ['Varies', 'Sleep is still spread across day and night'] :
+        ['12–16 h', 'Per day with naps, ages 4–12 months'];
+      const tummy = age < 49 ? ['3–5 min', 'Start with brief, supervised sessions'] :
+        ['15–30 min', 'Daily goal by 7 weeks, split up'];
+      if (age >= 120) tummy.splice(0, 2, 'Floor play', 'Awake, supervised movement');
+      return { wet, poop, sleep, tummy, newborn, age };
+    }
+
     function optionLabel(birth, week) {
       const start = weekStart(birth, week);
       return 'Week ' + week + ' · ' + dateRange.formatRange(new Date(start * dayMs), new Date((start + 6) * dayMs));
@@ -315,7 +369,7 @@
     }
 
     function render() {
-      const birth = parseBirthday(profile.birthdate), today = dayInArizona();
+      const today = dayInArizona();
       lastDay = today;
       const finalWeek = weekOf(birth, monthAt(birth, 12));
       const actualWeek = weekOf(birth, today);
@@ -337,8 +391,6 @@
       get('previous').disabled = selectedWeek <= 1;
       get('next').disabled = selectedWeek >= finalWeek;
       get('current').disabled = selectedWeek === actualWeek;
-      write('title', profile.name + '’s Weekly Overview');
-      write('story-title', 'This week with ' + profile.name);
       write('week-tag', 'Week ' + selectedWeek + (isCurrent ? ' · Current week' : ''));
       write('age', ref >= birthday ? '1 year old' : age);
       write('dates', dateRange.formatRange(new Date(start * dayMs), new Date(end * dayMs)));
@@ -346,6 +398,27 @@
       write('size-note', sizeNote);
       write('count', count);
       write('count-note', countNote);
+      const care = dailyCare(birth, ref);
+      for (const key of ['wet', 'poop', 'sleep', 'tummy']) {
+        write(key, care[key][0]);
+        write(key + '-note', care[key][1]);
+      }
+      write('feeding-cues', 'Hands to mouth or turning toward the bottle can signal hunger. Closing her mouth or turning away can mean she’s full.');
+      write('growth', care.newborn
+        ? 'Many newborns regain their birth weight by about 2 weeks. Growth spurts can happen around days 7–10 and again around 3–6 weeks. Your pediatrician can help interpret her weight trend.'
+        : 'At well visits, follow her growth over time. Weight, length, and head circumference together tell more than a single measurement.');
+      write('diaper-detail', 'Count pee and poop separately. A diaper with both counts once in each category. Watch for a noticeable drop in wet diapers or darker urine.');
+      write('stool-detail', care.newborn
+        ? 'Black, sticky meconium is expected in the first days. After that, yellow, tan, or green can be normal. In the first month, less than one poop a day can be worth a call, especially if she’s feeding less.'
+        : 'Yellow, tan, and green can all be normal. Formula-fed babies often poop most days and can sometimes go 1–2 days between soft stools. Check in about hard, dry stools or a sudden increase in watery stools.');
+      write('play-detail', care.age < 49
+        ? 'If she’s comfortable, start with 3–5 minutes of awake, supervised tummy time 2–3 times a day and build gradually toward 15–30 minutes total by 7 weeks.'
+        : 'Offer supervised floor play while she’s awake. Keep sessions short if she’s tired or fussy.');
+      write('fever', ref <= monthAt(birth, 3)
+        ? 'At 3 months or younger, a rectal temperature of 100.4°F (38°C) or higher means call right away.'
+        : 'For fever with poor feeding or signs of dehydration, call her pediatrician for guidance.');
+      if (lastSafetyWeek !== selectedWeek) get('callout').open = ref <= monthAt(birth, 3);
+      lastSafetyWeek = selectedWeek;
       write('milestone-title', stage.title);
       get('milestones').replaceChildren(...[first, second].map(text => {
         const item = document.createElement('li');
@@ -361,64 +434,19 @@
       write('feeding-source-note', 'Cards show general formula guidance for the displayed age. The daily estimates based on 3–4 hour intervals are examples. Milestones use broader age windows.');
     }
 
-    function openDashboard() {
-      const birth = parseBirthday(profile.birthdate);
-      const finalWeek = weekOf(birth, monthAt(birth, 12));
-      get('week').replaceChildren(...Array.from({length: finalWeek}, (_, i) =>
-        new Option(optionLabel(birth, i + 1), String(i + 1))));
-      get('settings').hidden = true;
-      get('dashboard').hidden = false;
-      choose(weekOf(birth, dayInArizona()), true);
-    }
+    const birth = Date.parse(birthDate + 'T00:00:00Z') / dayMs;
+    const firstBirthdayWeek = weekOf(birth, monthAt(birth, 12));
+    get('week').replaceChildren(...Array.from({length: firstBirthdayWeek}, (_, i) =>
+      new Option(optionLabel(birth, i + 1), String(i + 1))));
 
-    function openSettings() {
-      get('birthday').max = new Date(dayInArizona() * dayMs).toISOString().slice(0,10);
-      get('settings').hidden = false;
-      get('dashboard').hidden = true;
-      get('cancel').hidden = !profile;
-      get('name').value = profile?.name ?? '';
-      get('birthday').value = profile?.birthdate ?? '';
-    }
-
-    get('profile-form').addEventListener('submit', event => {
-      event.preventDefault();
-      const name = get('name').value.trim(), birthdate = get('birthday').value;
-      const birth = parseBirthday(birthdate);
-      if (!name || birth === null || birth > dayInArizona()) {
-        write('profile-error', 'Enter a name and a valid birthdate.');
-        return;
-      }
-      try {
-        localStorage.setItem(storageKey, JSON.stringify({name, birthdate}));
-      } catch {
-        write('profile-error', 'This browser couldn’t save those details.');
-        return;
-      }
-      profile = {name, birthdate};
-      write('profile-error', '');
-      openDashboard();
-      get('week').focus();
-    });
-    get('edit').addEventListener('click', () => { openSettings(); get('name').focus(); });
-    get('cancel').addEventListener('click', openDashboard);
     get('week').addEventListener('change', event => choose(Number(event.target.value)));
     get('previous').addEventListener('click', () => choose(selectedWeek - 1));
     get('next').addEventListener('click', () => choose(selectedWeek + 1));
-    get('current').addEventListener('click', () => choose(weekOf(parseBirthday(profile.birthdate), dayInArizona()), true));
-
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey));
-      const birth = parseBirthday(saved?.birthdate);
-      if (typeof saved?.name === 'string' && saved.name.length <= 30 && saved.name.trim() && birth !== null && birth <= dayInArizona()) profile = saved;
-    } catch {
-      write('profile-error', 'Saved details couldn’t be read. You can enter them again.');
-    }
-    if (profile) openDashboard();
-    else openSettings();
+    get('current').addEventListener('click', () => choose(weekOf(birth, dayInArizona()), true));
+    choose(weekOf(birth, dayInArizona()), true);
     setInterval(() => {
-      if (profile && !get('dashboard').hidden && lastDay !== dayInArizona()) render();
+      if (lastDay !== dayInArizona()) render();
     }, 30000);
-
   </script>
 </body>
 </html>
