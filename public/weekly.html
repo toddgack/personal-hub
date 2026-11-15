@@ -24,7 +24,7 @@
     .panel { border: 1px solid var(--line); padding: clamp(1rem, 3vw, 1.5rem); }
     .week-controls { display: flex; align-items: end; gap: .55rem; flex-wrap: wrap; margin-bottom: .8rem; }
     .week-controls label { flex: 1 1 14rem; margin-bottom: 0; }
-    button, select, input { font: inherit; color: inherit; min-width: 0; min-height: 2.75rem; border: 1px solid var(--line); border-radius: .7rem; padding: .5rem .75rem; background: #22152d; }
+    button, select { font: inherit; color: inherit; min-width: 0; min-height: 2.75rem; border: 1px solid var(--line); border-radius: .7rem; padding: .5rem .75rem; background: #22152d; }
     button { cursor: pointer; font-weight: 650; }
     button:hover:not(:disabled) { border-color: var(--lavender); }
     button:disabled { opacity: .48; cursor: default; }
@@ -43,14 +43,14 @@
     .week-controls select { max-width: 100%; }
     .stat .sub { font-size: .88rem; color: #e7d7ea; }
     .feeding-note { margin: .65rem .1rem 0; }
-    .weekly-page .observations { margin-top: .75rem; padding: .75rem .9rem; }
-    .observations form { margin-top: .65rem; }
-    .observations form > p { margin: .45rem 0; }
-    .observation-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
-    .observation-fields input { width: 100%; }
-    .observation-fields fieldset { display: grid; gap: .25rem .45rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; min-width: 0; padding: 0; border: 0; }
-    .observation-fields fieldset legend { font-size: .85rem; font-weight: 650; padding: 0; }
-    #observation-status:empty { display: none; }
+    .metric-source { font-size: .75rem; margin-top: .15rem; }
+    .first-week, .week-evidence { margin-top: .75rem; font-size: .9rem; }
+    .first-week table { border-collapse: collapse; width: 100%; margin-top: .65rem; text-align: left; }
+    .first-week th, .first-week td { padding: .45rem .28rem; border-bottom: 1px solid var(--line); }
+    .first-week p { margin-top: .5rem; }
+    .week-evidence ul { margin-top: .6rem; padding-left: 1.1rem; }
+    .week-evidence li + li { margin-top: .55rem; }
+    .week-evidence a { font-size: .8rem; }
     .story { margin-top: 1.6rem; }
     .story > h2 { margin: 0 0 .65rem .1rem; }
     .story-grid { display: grid; grid-template-columns: 1fr; gap: .65rem; }
@@ -100,57 +100,58 @@
           <strong id="age"></strong>
           <p class="sub" id="dates"></p>
         </section>
-        <h2 class="section-label">Violet’s numbers this week</h2>
+        <h2 class="section-label">What’s usual this week</h2>
         <section class="panel stat size-card">
-          <h2 class="eyebrow">Bottle size</h2>
+          <h2 class="eyebrow">Bottle size · per feed</h2>
           <strong id="size"></strong>
           <p class="sub" id="size-note"></p>
+          <a class="metric-source" id="size-source"></a>
         </section>
         <section class="panel stat count-card">
-          <h2 class="eyebrow">Feeds · 24 hours</h2>
+          <h2 class="eyebrow">Formula feeds · 24 h</h2>
           <strong id="count"></strong>
           <p class="sub" id="count-note"></p>
+          <a class="metric-source" id="count-source"></a>
         </section>
         <section class="panel stat diaper-card">
           <h2 class="eyebrow">Wet diapers · 24 h</h2>
           <strong id="wet"></strong>
           <p class="sub" id="wet-note"></p>
+          <a class="metric-source" id="wet-source"></a>
         </section>
         <section class="panel stat diaper-card">
-          <h2 class="eyebrow">Poops · 24 hours</h2>
+          <h2 class="eyebrow">Poops · 24 h</h2>
           <strong id="poop"></strong>
           <p class="sub" id="poop-note"></p>
+          <a class="metric-source" id="poop-source"></a>
         </section>
 
       </div>
-      <p class="muted small feeding-note">Each week has its own entries. Blank cards are ready for your observations.</p>
-      <details class="panel observations">
-        <summary>Update Violet’s numbers for this week</summary>
-        <form id="observation-form">
-          <p class="muted small">Enter what’s typical for the selected week. Leave a field blank if you haven’t counted it. Entries stay in this browser.</p>
-          <div class="observation-fields">
-            <label>Bottle (mL)<input id="observed-bottle" type="number" inputmode="numeric" min="1" max="999" step="1"></label>
-            <fieldset>
-              <legend>Feeds per day</legend>
-              <label>Typical<input id="observed-feeds" type="number" inputmode="numeric" min="1" max="99" step="1"></label>
-              <label>To (optional)<input id="observed-feeds-end" type="number" inputmode="numeric" min="1" max="99" step="1"></label>
-            </fieldset>
-            <label>Wet diapers per day<input id="observed-wet" type="number" inputmode="numeric" min="0" max="99" step="1"></label>
-            <label>Poops per day<input id="observed-poop" type="number" inputmode="numeric" min="0" max="99" step="1"></label>
-          </div>
-          <p class="small" id="observation-status" role="status"></p>
-          <button type="submit" class="primary">Save this week</button>
-        </form>
+      <p class="muted small feeding-note">For healthy, full-term babies. Formula guides can cover several weeks. Use hunger and fullness cues and follow any feeding plan from her pediatrician.</p>
+      <details class="panel first-week" id="first-week" open hidden>
+        <summary>First 7 days · bottle and pee guide</summary>
+        <table>
+          <thead><tr><th scope="col">Day</th><th scope="col">Formula per feed</th><th scope="col">Wet diapers per day</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">1</th><td>5–10 mL</td><td>1+</td></tr>
+            <tr><th scope="row">2</th><td>10–20 mL</td><td>2+</td></tr>
+            <tr><th scope="row">3</th><td>20–30 mL</td><td>3+</td></tr>
+            <tr><th scope="row">4</th><td>40–70 mL</td><td>3+</td></tr>
+            <tr><th scope="row">5–6</th><td>40–70 mL</td><td>5+</td></tr>
+            <tr><th scope="row">7</th><td>40–70 mL</td><td>6+</td></tr>
+          </tbody>
+        </table>
+        <p>The first poop is usually dark and sticky. As milk intake picks up, stools become lighter.</p>
+        <p><a id="day-volume-source"></a> · <a id="day-wet-source"></a></p>
       </details>
 
       <section class="story" aria-labelledby="story-title">
         <h2 id="story-title">This week with Violet</h2>
         <div class="story-grid">
           <section class="panel">
-            <p class="eyebrow">What to notice this week</p>
+            <p class="eyebrow">What you might notice</p>
             <h3 id="milestone-title"></h3>
             <p id="milestones"></p>
-            <p class="muted small" id="milestone-note"></p>
           </section>
           <div class="story-stack">
             <section class="panel">
@@ -164,6 +165,11 @@
           </div>
         </div>
       </section>
+
+      <details class="panel week-evidence" id="evidence">
+        <summary>Research and care for this week</summary>
+        <ul id="age-evidence"></ul>
+      </details>
 
       <section class="care" aria-labelledby="care-title">
         <h2 id="care-title">Worth knowing</h2>
@@ -190,9 +196,7 @@
       </section>
 
       <details class="panel sources">
-        <summary>General age guides and sources</summary>
-        <p>These references cover broader ages. Follow Violet’s cues and any plan from her pediatrician.</p>
-        <ul id="general-numbers"></ul>
+        <summary>More about feeding, sleep and development</summary>
         <ul>
           <li><a href="https://www.cdc.gov/infant-toddler-nutrition/formula-feeding/how-much-and-how-often.html">CDC formula feeding guide</a></li>
           <li><a href="https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/amount-and-schedule-of-formula-feedings.aspx">AAP formula feeding guide</a></li>
@@ -282,37 +286,6 @@
     let followsToday = true;
     let lastDay;
     let lastSafetyWeek;
-    const observationFields = {
-      bottle: 'observed-bottle', feeds: 'observed-feeds', feedsEnd: 'observed-feeds-end',
-      wet: 'observed-wet', poop: 'observed-poop'
-    };
-    const observations = new Map();
-
-    function observedWeek(week) {
-      if (!observations.has(week)) {
-        let values = {};
-        try {
-          const saved = JSON.parse(localStorage.getItem('personal-hub.violet-week.' + week));
-          if (saved) {
-            for (const key of Object.keys(observationFields)) {
-              const value = saved[key];
-              if (Number.isInteger(value) && value >= 0) values[key] = value;
-            }
-          }
-        } catch {
-          write('observation-status', 'Saved numbers could not be loaded in this browser.');
-        }
-        observations.set(week, values);
-      }
-      return observations.get(week);
-    }
-
-    function fillObservations(week) {
-      write('observation-status', '');
-      const values = observedWeek(week);
-      for (const [key, id] of Object.entries(observationFields)) get(id).value = values[key] ?? '';
-    }
-
     function dayInArizona(date = new Date()) {
       const parts = Object.fromEntries(arizona.formatToParts(date).map(({type,value}) => [type,value]));
       return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) / dayMs;
@@ -328,36 +301,126 @@
       return Date.UTC(y, m, Math.min(last, date.getUTCDate())) / dayMs;
     }
 
-    function feeding(birth, day) {
-      const age = day - birth;
-      if (day >= monthAt(birth, 12)) return ['Varies', 'Around the 1-year transition', 'Varies', 'Ask about the next feeding stage'];
-      if (age < 7) return ['30–60 mL', 'Formula guide for the first days', '8–12', 'Common newborn formula pattern'];
-      if (day < monthAt(birth, 1)) return ['90–120 mL', 'Formula example around 1 month', '8–12', 'Newborn formula guide, varies by baby'];
-      if (day < monthAt(birth, 2)) return ['90–120 mL', 'Formula example around 1 month', 'About 6–8', 'If feeding every 3–4 hours'];
-      if (day < monthAt(birth, 4)) return ['About 150 mL', 'Formula example around 2 months', 'About 6–8', 'If feeding every 3–4 hours'];
-      if (day < monthAt(birth, 6)) return ['About 180 mL', 'Formula example around 4 months', 'Varies', 'As bottles get larger'];
-      if (day < monthAt(birth, 7)) return ['180–240 mL', 'Formula example around 6 months', '4–5', 'Typical around 6 months'];
-      return ['Varies', 'Formula intake shifts as solids grow', 'Varies', 'Milk and solids shape the day'];
+    const sources = {
+      westmead: ['Westmead Hospital', 'https://www.wslhd.health.nsw.gov.au/ArticleDocuments/1371/Infant%20formula%20and%20bottle%20feeding%20fact%20sheet.pdf.aspx'],
+      cdc: ['CDC', 'https://www.cdc.gov/infant-toddler-nutrition/formula-feeding/how-much-and-how-often.html'],
+      sussex: ['University Hospitals Sussex', 'https://www.uhsussex.nhs.uk/resources/how-to-safely-bottle-feed-your-baby/'],
+      seattle: ['Seattle Children’s', 'https://www.seattlechildrens.org/conditions/a-z/bottle-feeding-formula-questions/'],
+      aapDiapers: ['AAP', 'https://www.healthychildren.org/English/health-issues/injuries-emergencies/Pages/Dehydration.aspx'],
+      ottawa: ['Ottawa Public Health', 'https://www.ottawapublichealth.ca/clinics-education-and-supports/pregnancy-and-parenting-support/infant-feeding/bottle-feeding/'],
+      windsor: ['Windsor-Essex Public Health', 'https://www.wechu.org/healthy-families/bottle-feeding'],
+      bottleStudy: ['Feeding diary study, table 3', 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10783545/#Tab3'],
+      formulaStudy: ['Formula diary study, table 5', 'https://res.mdpi.com/d_attachment/nutrients/nutrients-09-01254/article_deploy/nutrients-09-01254.pdf'],
+      volumeStudy: ['Formula intake trial, table 3', 'https://www.mdpi.com/2072-6643/12/7/2072'],
+      wetStudy: ['Wet diaper study', 'https://pubmed.ncbi.nlm.nih.gov/25297064/'],
+      birthVisit: ['AAP first visit', 'https://www.aap.org/en/patient-care/newborn-infant-and-early-childhood-nutrition/newborn-and-infant-health-assessment-and-promotion/first-office-visit-3-5-days/'],
+      growth: ['AAP newborn growth', 'https://www.healthychildren.org/English/ages-stages/baby/Pages/First-Month-Physical-Appearance-and-Growth.aspx'],
+      who: ['WHO girls’ growth table', 'https://www.who.int/docs/default-source/child-growth/child-growth-standards/indicators/weight-for-age/sft-wfa-girls-p-0-13.pdf'],
+      tummy: ['AAP tummy time', 'https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/back-to-sleep-tummy-to-play.aspx'],
+      crying: ['Royal Children’s Hospital', 'https://www.rch.org.au/clinicalguide/guideline_index/crying_baby_infant_distress/'],
+      solids: ['CDC starting solids', 'https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/when-what-and-how-to-introduce-solid-foods.html'],
+      milk: ['CDC milk at 12 months', 'https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/cows-milk-and-milk-alternatives.html']
+    };
+
+    const bottleStudyMeans = [44, 63, 75, 81];
+    const whoGirlsMedianKg = [3.2, 3.3, 3.6, 3.8, 4.1, 4.3, 4.6, 4.8, 5.0, 5.2, 5.4, 5.5, 5.7, 5.8];
+    // These studies collected diaries leading up to the labeled visit age.
+    const researchAtWeek = {
+      2: ['Formula-fed groups averaged 8.6–8.7 feeds per day in diaries before the 2-week visit.', 'formulaStudy'],
+      4: ['Two formula groups averaged 618 and 658 mL per day in the seven days before the 4-week visit.', 'volumeStudy'],
+      7: ['Both formula groups averaged 8.4 feeds per day in diaries before the 7-week visit.', 'formulaStudy'],
+      8: ['At the 8-week visit, two formula groups averaged about 8 and 10 wet diapers per day. These were group averages.', 'wetStudy'],
+      13: ['Formula-fed groups averaged 7.7 and 7.8 feeds per day in diaries before the 13-week visit.', 'formulaStudy'],
+      17: ['Two formula groups averaged 848 and 880 mL per day in the seven days before the 17-week visit.', 'volumeStudy']
+    };
+
+    function benchmarks(week, start) {
+      const age = week - 1;
+      const newbornFeeds = ['8–12', 'Typical for formula-fed newborns', 'cdc'];
+      const wet = week === 1
+        ? ['Rises daily', 'See the first-week chart below', 'sussex']
+        : ['6+', 'Hydration benchmark. More is common.', 'aapDiapers'];
+      const poop = week === 1
+        ? ['1–8', 'Typical range for formula-fed newborns', 'seattle']
+        : start < monthAt(birth, 2)
+          ? ['1–4', 'Common after the first week with formula', 'seattle']
+          : ['1–2', 'Often daily. Some babies go every other day.', 'seattle'];
+
+      let bottle, feeds;
+      if (week === 1) {
+        bottle = ['5–70 mL', 'Changes quickly. See the day-by-day chart.', 'westmead'];
+        feeds = newbornFeeds;
+      } else if (age < 3) {
+        bottle = ['60–90 mL', 'Formula guide at ages 1–2 weeks', 'ottawa'];
+        feeds = ['6–10', 'Formula guide at ages 1–2 weeks', 'ottawa'];
+      } else if (week === 4) {
+        bottle = ['~81 mL', 'Week 4 study average · mixed feeding', 'bottleStudy'];
+        feeds = newbornFeeds;
+      } else if (age < 8) {
+        bottle = ['90–150 mL', 'Formula guide at ages 3–8 weeks', 'ottawa'];
+        feeds = age < 6
+          ? ['8+', 'Common feeding frequency through about age 6 weeks', 'ottawa']
+          : ['5–8', 'Formula guide at ages 3–8 weeks', 'ottawa'];
+      } else if (start < monthAt(birth, 6)) {
+        bottle = ['120–180 mL', 'Typical formula bottle size', 'ottawa'];
+        feeds = ['5–7', 'Typical daily formula bottles', 'ottawa'];
+      } else if (start < monthAt(birth, 9)) {
+        bottle = ['120–240 mL', 'Formula guide as solids are introduced', 'ottawa'];
+        feeds = ['4–5', 'Typical daily formula bottles', 'ottawa'];
+      } else {
+        bottle = ['180–240 mL', 'Formula guide as meals grow', 'windsor'];
+        feeds = ['3–4', 'Typical daily formula bottles', 'windsor'];
+      }
+
+      return { size: bottle, count: feeds, wet, poop };
     }
 
-    function dailyCare(birth, day) {
-      const age = day - birth;
-      const newborn = day < monthAt(birth, 1);
-      const beforeFourMonths = day < monthAt(birth, 4);
-      const afterFirstBirthday = day >= monthAt(birth, 12);
-      const wet = age < 5
-        ? ['Rising', 'By day 5, look for at least 5–6']
-        : ['5–6 minimum', 'A lower benchmark after day 5'];
-      const poop = age < 5 ? ['Varies', 'Dark first stools turn lighter'] :
-        afterFirstBirthday ? ['Varies', 'Watch her usual pattern'] :
-        ['Most days', newborn ? 'Often at least 1 with formula' : 'Often daily with formula, varies'];
-      const sleep = newborn ? ['~16–17 h', 'In short stretches, naps included'] :
-        beforeFourMonths ? ['Varies', 'Sleep is still spread across day and night'] :
-        ['12–16 h', 'Per day with naps, ages 4–12 months'];
-      const tummy = age < 49 ? ['3–5 min', 'Start with brief, supervised sessions'] :
-        ['15–30 min', 'Daily goal by 7 weeks, split up'];
-      if (age >= 120) tummy.splice(0, 2, 'Floor play', 'Awake, supervised movement');
-      return { wet, poop, sleep, tummy, newborn, age };
+    function renderMetric(id, [value, description, source]) {
+      write(id, value);
+      write(id + '-note', description);
+      setSource(get(id + '-source'), source);
+    }
+
+    function setSource(link, key) {
+      const [label, url] = sources[key];
+      link.textContent = label;
+      link.href = url;
+    }
+
+    function appendEvidence(list, description, source) {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      setSource(link, source);
+      item.append(description, ' ', link);
+      list.append(item);
+    }
+
+    function renderEvidence(week, start, end) {
+      const points = get('age-evidence');
+      points.replaceChildren();
+      if (week <= bottleStudyMeans.length) {
+        const studyMean = bottleStudyMeans[week - 1];
+        appendEvidence(points, 'Bottle feeds averaged about ' + studyMean + ' mL in Week ' + week + ' in a small study. The bottle-fed group also nursed, so this is an observed average across those bottles.', 'bottleStudy');
+      }
+      if (researchAtWeek[week]) appendEvidence(points, ...researchAtWeek[week]);
+      if (week === 4) appendEvidence(points, 'For formula, Ottawa’s preparation guide lists 90–150 mL per bottle at ages 3–8 weeks. How much a baby drinks at a feed depends on appetite and how often they feed.', 'ottawa');
+      if (week === 1) appendEvidence(points, 'The first newborn checkup usually falls on days 3–5. It covers weight, feeding, hydration and jaundice.', 'birthVisit');
+      if (week === 2) appendEvidence(points, 'Many newborns regain their birth weight at about 2 weeks.', 'growth');
+      if (week >= 3 && week <= 5) appendEvidence(points, 'Small acne-like bumps on the face can appear in weeks 3–5.', 'growth');
+      if (week >= 7 && week <= 9) appendEvidence(points, 'Crying often peaks at ages 6–8 weeks. The average at that peak is about 2–3 hours over a day, with a lot of variation.', 'crying');
+      if (week === 8) appendEvidence(points, 'At 7 weeks, 15–30 minutes of awake, supervised tummy time per day can be spread over short sessions.', 'tummy');
+      if (start <= monthAt(birth, 6) && end >= monthAt(birth, 6)) {
+        appendEvidence(points, 'Violet turns 6 months this week. Signs of readiness for solids include steady head control, sitting with support and swallowing food. Milk feeds continue.', 'solids');
+      }
+      if (start <= monthAt(birth, 12) && end >= monthAt(birth, 12)) {
+        appendEvidence(points, 'Violet turns 1 this week. Starting on her birthday, plain pasteurized whole milk can be introduced as part of meals and snacks.', 'milk');
+      }
+      const age = week - 1;
+      if (age < whoGirlsMedianKg.length) {
+        const when = age === 0 ? 'at birth' : 'at age ' + age + (age === 1 ? ' week' : ' weeks');
+        appendEvidence(points, 'WHO median weight for girls ' + when + ' is ' + whoGirlsMedianKg[age].toFixed(1) + ' kg. Her own growth trend is what her pediatrician follows.', 'who');
+      }
+      get('evidence').hidden = points.children.length === 0;
     }
 
     function optionLabel(birth, week) {
@@ -369,7 +432,6 @@
       selectedWeek = week;
       followsToday = follow;
       render();
-      fillObservations(selectedWeek);
     }
 
     function render() {
@@ -389,7 +451,6 @@
         ? (ageDays === 0 ? 'Newborn' : ageDays + (ageDays === 1 ? ' day old' : ' days old'))
         : completedWeeks + (completedWeeks === 1 ? ' week' : ' weeks') + (extraDays && isCurrent ? ' + ' + extraDays + (extraDays === 1 ? ' day' : ' days') : '') + ' old';
       const [focus, notice, activity, fact] = weeklyRecaps[selectedWeek - 1];
-      const [size, sizeNote, count, countNote] = feeding(birth, ref);
       get('week').value = String(selectedWeek);
       get('previous').disabled = selectedWeek <= 1;
       get('next').disabled = selectedWeek >= finalWeek;
@@ -397,39 +458,18 @@
       write('week-tag', 'Week ' + selectedWeek + (isCurrent ? ' · Current week' : ''));
       write('age', ref >= birthday ? '1 year old' : age);
       write('dates', dateRange.formatRange(new Date(start * dayMs), new Date(end * dayMs)));
-      const saved = observedWeek(selectedWeek);
-      const observedNote = 'Violet’s pattern this week';
-      const missing = '—';
-      const unrecorded = 'No count saved for this week';
-      write('size', saved.bottle === undefined ? missing : saved.bottle + ' mL');
-      write('size-note', saved.bottle === undefined ? 'No bottle size saved for this week' : observedNote);
-      const feedRange = saved.feedsEnd > saved.feeds ? saved.feeds + '–' + saved.feedsEnd : saved.feeds;
-      write('count', feedRange ?? missing);
-      write('count-note', saved.feeds === undefined ? unrecorded : observedNote);
-      for (const key of ['wet', 'poop']) {
-        write(key, saved[key] ?? missing);
-        write(key + '-note', saved[key] === undefined ? unrecorded : observedNote);
-      }
-      const care = dailyCare(birth, ref);
-      const references = [
-        ['Formula bottle size', size, sizeNote], ['Formula feeds', count, countNote],
-        ['Wet diapers', ...care.wet], ['Poops', ...care.poop],
-        ['Sleep', ...care.sleep], ['Tummy time', ...care.tummy]
-      ];
-      get('general-numbers').replaceChildren(...references.map(([heading, value, note]) => {
-        const item = document.createElement('li');
-        item.textContent = heading + ' · ' + value + ' · ' + note;
-        return item;
-      }));
+      for (const [id, metric] of Object.entries(benchmarks(selectedWeek, start))) renderMetric(id, metric);
+      get('first-week').hidden = selectedWeek !== 1;
+      renderEvidence(selectedWeek, start, end);
       write('feeding-cues', 'Hands to mouth or turning toward the bottle can signal hunger. Closing her mouth or turning away can mean she’s full.');
-      write('growth', care.newborn
-        ? 'At a weight check, ask how her weight compares with her last visit. Bring her usual bottle size and feed count so the pediatrician can consider them alongside her growth.'
+      write('growth', start < monthAt(birth, 1)
+        ? 'Her pediatrician checks how feeding and weight gain are going together at newborn visits.'
         : 'At well visits, follow her growth over time. Weight, length, and head circumference together tell more than a single measurement.');
-      write('diaper-detail', 'Count pee and poop separately. A diaper with both counts once in each category. The wet-diaper guide is a minimum. Watch for a noticeable drop from her usual count or darker urine.');
-      write('stool-detail', care.newborn
+      write('diaper-detail', 'Count pee and poop separately. A diaper with both counts once in each category. The wet-diaper guide gives a hydration benchmark. Call about a noticeable drop from her usual count or darker urine.');
+      write('stool-detail', start < monthAt(birth, 1)
         ? 'Yellow, tan, or green can be normal after the first dark, sticky stools. If poops become less frequent and Violet is also feeding less, check in with her pediatrician.'
         : 'Yellow, tan, and green can all be normal. Formula-fed babies often poop most days and can sometimes go 1–2 days between soft stools. Check in about hard, dry stools or a sudden increase in watery stools.');
-      write('play-detail', care.age < 49
+      write('play-detail', start - birth < 49
         ? 'Try short stretches of awake, supervised tummy time when she’s calm. Pause when she’s tired or fussy.'
         : 'Offer supervised floor play while she’s awake. Keep sessions short if she’s tired or fussy.');
       write('fever', ref <= monthAt(birth, 3)
@@ -439,7 +479,6 @@
       lastSafetyWeek = selectedWeek;
       write('milestone-title', focus);
       write('milestones', notice);
-      write('milestone-note', 'Something to watch for at her pace.');
       write('activity', activity);
       write('fact', fact);
     }
@@ -453,34 +492,13 @@
     get('previous').addEventListener('click', () => choose(selectedWeek - 1));
     get('next').addEventListener('click', () => choose(selectedWeek + 1));
     get('current').addEventListener('click', () => choose(weekOf(birth, dayInArizona()), true));
-    get('observation-form').addEventListener('submit', event => {
-      event.preventDefault();
-      const values = {};
-      for (const [key, id] of Object.entries(observationFields)) {
-        const input = get(id);
-        if (input.value !== '') values[key] = input.valueAsNumber;
-      }
-      if (values.feedsEnd !== undefined && (values.feeds === undefined || values.feedsEnd < values.feeds)) {
-        write('observation-status', 'Enter a typical feed count first, then an equal or higher count in To.');
-        return;
-      }
-      try {
-        localStorage.setItem('personal-hub.violet-week.' + selectedWeek, JSON.stringify(values));
-      } catch {
-        write('observation-status', 'This browser could not save the numbers.');
-        return;
-      }
-      observations.set(selectedWeek, values);
-      render();
-      write('observation-status', 'Saved for Week ' + selectedWeek + '.');
-    });
+    setSource(get('day-volume-source'), 'westmead');
+    setSource(get('day-wet-source'), 'sussex');
 
     choose(weekOf(birth, dayInArizona()), true);
     setInterval(() => {
       if (lastDay === dayInArizona()) return;
-      const previous = selectedWeek;
       render();
-      if (previous !== selectedWeek) fillObservations(selectedWeek);
     }, 30000);
   </script>
 </body>
