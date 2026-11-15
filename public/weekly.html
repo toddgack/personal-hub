@@ -43,6 +43,14 @@
     .week-controls select { max-width: 100%; }
     .stat .sub { font-size: .88rem; color: #e7d7ea; }
     .feeding-note { margin: .65rem .1rem 0; }
+    .weekly-page .observations { margin-top: .75rem; padding: .75rem .9rem; }
+    .observations form { margin-top: .65rem; }
+    .observations form > p { margin: .45rem 0; }
+    .observation-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+    .observation-fields input { width: 100%; }
+    .observation-fields fieldset { display: grid; gap: .25rem .45rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; min-width: 0; padding: 0; border: 0; }
+    .observation-fields fieldset legend { font-size: .85rem; font-weight: 650; padding: 0; }
+    #observation-status:empty { display: none; }
     .story { margin-top: 1.6rem; }
     .story > h2 { margin: 0 0 .65rem .1rem; }
     .story-grid { display: grid; grid-template-columns: 1fr; gap: .65rem; }
@@ -96,12 +104,12 @@
         </section>
         <h2 class="section-label">The daily numbers</h2>
         <section class="panel stat size-card">
-          <h2 class="eyebrow">Bottle size · formula</h2>
+          <h2 class="eyebrow">Bottle size</h2>
           <strong id="size"></strong>
           <p class="sub" id="size-note"></p>
         </section>
         <section class="panel stat count-card">
-          <h2 class="eyebrow">Formula feeds · 24 hours</h2>
+          <h2 class="eyebrow">Feeds · 24 hours</h2>
           <strong id="count"></strong>
           <p class="sub" id="count-note"></p>
         </section>
@@ -111,7 +119,7 @@
           <p class="sub" id="wet-note"></p>
         </section>
         <section class="panel stat diaper-card">
-          <h2 class="eyebrow">Poops · formula</h2>
+          <h2 class="eyebrow">Poops · 24 hours</h2>
           <strong id="poop"></strong>
           <p class="sub" id="poop-note"></p>
         </section>
@@ -126,7 +134,25 @@
           <p class="sub" id="tummy-note"></p>
         </section>
       </div>
-      <p class="muted small feeding-note">These are age-based guides. Bottle numbers are for formula. Follow Violet’s cues and any feeding plan from her pediatrician.</p>
+      <p class="muted small feeding-note">Saved numbers show Violet’s pattern for the selected week. Other numbers are broad age guides, and the feeding guide is for formula.</p>
+      <details class="panel observations">
+        <summary>Update Violet’s numbers</summary>
+        <form id="observation-form">
+          <p class="muted small">Enter what’s typical for this week. Leave a field blank to show the age guide. Entries stay in this browser.</p>
+          <div class="observation-fields">
+            <label>Bottle (mL)<input id="observed-bottle" type="number" inputmode="numeric" min="1" max="999" step="1"></label>
+            <fieldset>
+              <legend>Feeds per day</legend>
+              <label>Typical<input id="observed-feeds" type="number" inputmode="numeric" min="1" max="99" step="1"></label>
+              <label>To (optional)<input id="observed-feeds-end" type="number" inputmode="numeric" min="1" max="99" step="1"></label>
+            </fieldset>
+            <label>Wet diapers per day<input id="observed-wet" type="number" inputmode="numeric" min="0" max="99" step="1"></label>
+            <label>Poops per day<input id="observed-poop" type="number" inputmode="numeric" min="0" max="99" step="1"></label>
+          </div>
+          <p class="small" id="observation-status" role="status"></p>
+          <button type="submit" class="primary">Save this week</button>
+        </form>
+      </details>
 
       <section class="story" aria-labelledby="story-title">
         <h2 id="story-title">This week with Violet</h2>
@@ -309,6 +335,36 @@
     let followsToday = true;
     let lastDay;
     let lastSafetyWeek;
+    const observationFields = {
+      bottle: 'observed-bottle', feeds: 'observed-feeds', feedsEnd: 'observed-feeds-end',
+      wet: 'observed-wet', poop: 'observed-poop'
+    };
+    const observations = new Map();
+
+    function observedWeek(week) {
+      if (!observations.has(week)) {
+        let values = {};
+        try {
+          const saved = JSON.parse(localStorage.getItem('personal-hub.violet-week.' + week));
+          if (saved) {
+            for (const key of Object.keys(observationFields)) {
+              const value = saved[key];
+              if (Number.isInteger(value) && value >= 0) values[key] = value;
+            }
+          }
+        } catch {
+          write('observation-status', 'Saved numbers could not be loaded in this browser.');
+        }
+        observations.set(week, values);
+      }
+      return observations.get(week);
+    }
+
+    function fillObservations(week) {
+      write('observation-status', '');
+      const values = observedWeek(week);
+      for (const [key, id] of Object.entries(observationFields)) get(id).value = values[key] ?? '';
+    }
 
     function dayInArizona(date = new Date()) {
       const parts = Object.fromEntries(arizona.formatToParts(date).map(({type,value}) => [type,value]));
@@ -328,12 +384,12 @@
     function feeding(birth, day) {
       const age = day - birth;
       if (day >= monthAt(birth, 12)) return ['Varies', 'Around the 1-year transition', 'Varies', 'Ask about the next feeding stage'];
-      if (age < 7) return ['1–2 oz', 'First days and early first week', '8–12', 'Common newborn pattern'];
-      if (day < monthAt(birth, 1)) return ['3–4 oz', 'Typical by the end of month 1', 'About 6–8', 'As feeds space to 3–4 hours'];
-      if (day < monthAt(birth, 2)) return ['3–4 oz', 'Around the 1-month mark', 'About 6–8', 'If feeding every 3–4 hours'];
-      if (day < monthAt(birth, 4)) return ['About 5 oz', 'AAP example around 2 months', 'About 6–8', 'If feeding every 3–4 hours'];
-      if (day < monthAt(birth, 6)) return ['About 6 oz', 'AAP example around 4 months', 'Varies', 'As bottles get larger'];
-      if (day < monthAt(birth, 7)) return ['6–8 oz', 'AAP example around 6 months', '4–5', 'Typical around 6 months'];
+      if (age < 7) return ['30–60 mL', 'Formula guide for the first days', '8–12', 'Common newborn formula pattern'];
+      if (day < monthAt(birth, 1)) return ['90–120 mL', 'Formula example by the end of month 1', '8–12', 'Newborn formula guide, varies by baby'];
+      if (day < monthAt(birth, 2)) return ['90–120 mL', 'Formula example around 1 month', 'About 6–8', 'If feeding every 3–4 hours'];
+      if (day < monthAt(birth, 4)) return ['About 150 mL', 'Formula example around 2 months', 'About 6–8', 'If feeding every 3–4 hours'];
+      if (day < monthAt(birth, 6)) return ['About 180 mL', 'Formula example around 4 months', 'Varies', 'As bottles get larger'];
+      if (day < monthAt(birth, 7)) return ['180–240 mL', 'Formula example around 6 months', '4–5', 'Typical around 6 months'];
       return ['Varies', 'Formula intake shifts as solids grow', 'Varies', 'Milk and solids shape the day'];
     }
 
@@ -344,10 +400,10 @@
       const afterFirstBirthday = day >= monthAt(birth, 12);
       const wet = age < 5
         ? ['Rising', 'By day 5, look for at least 5–6']
-        : ['5–6+', 'Common minimum guide per day'];
+        : ['5–6 minimum', 'A lower benchmark after day 5'];
       const poop = age < 5 ? ['Varies', 'Dark first stools turn lighter'] :
         afterFirstBirthday ? ['Varies', 'Watch her usual pattern'] :
-        ['Most days', newborn ? 'Often at least 1 with formula' : 'Often daily with formula'];
+        ['Most days', newborn ? 'Often at least 1 with formula' : 'Often daily with formula, varies'];
       const sleep = newborn ? ['~16–17 h', 'In short stretches, naps included'] :
         beforeFourMonths ? ['Varies', 'Sleep is still spread across day and night'] :
         ['12–16 h', 'Per day with naps, ages 4–12 months'];
@@ -366,6 +422,7 @@
       selectedWeek = week;
       followsToday = follow;
       render();
+      fillObservations(selectedWeek);
     }
 
     function render() {
@@ -394,20 +451,23 @@
       write('week-tag', 'Week ' + selectedWeek + (isCurrent ? ' · Current week' : ''));
       write('age', ref >= birthday ? '1 year old' : age);
       write('dates', dateRange.formatRange(new Date(start * dayMs), new Date(end * dayMs)));
-      write('size', size);
-      write('size-note', sizeNote);
-      write('count', count);
-      write('count-note', countNote);
+      const saved = observedWeek(selectedWeek);
+      const observedNote = 'Violet’s pattern this week';
+      write('size', saved.bottle === undefined ? size : saved.bottle + ' mL');
+      write('size-note', saved.bottle === undefined ? sizeNote : observedNote);
+      const feedRange = saved.feedsEnd > saved.feeds ? saved.feeds + '–' + saved.feedsEnd : saved.feeds;
+      write('count', feedRange ?? count);
+      write('count-note', saved.feeds === undefined ? countNote : observedNote);
       const care = dailyCare(birth, ref);
       for (const key of ['wet', 'poop', 'sleep', 'tummy']) {
-        write(key, care[key][0]);
-        write(key + '-note', care[key][1]);
+        write(key, saved[key] ?? care[key][0]);
+        write(key + '-note', saved[key] === undefined ? care[key][1] : observedNote);
       }
       write('feeding-cues', 'Hands to mouth or turning toward the bottle can signal hunger. Closing her mouth or turning away can mean she’s full.');
       write('growth', care.newborn
         ? 'Many newborns regain their birth weight by about 2 weeks. Growth spurts can happen around days 7–10 and again around 3–6 weeks. Your pediatrician can help interpret her weight trend.'
         : 'At well visits, follow her growth over time. Weight, length, and head circumference together tell more than a single measurement.');
-      write('diaper-detail', 'Count pee and poop separately. A diaper with both counts once in each category. Watch for a noticeable drop in wet diapers or darker urine.');
+      write('diaper-detail', 'Count pee and poop separately. A diaper with both counts once in each category. The wet-diaper guide is a minimum. Watch for a noticeable drop from her usual count or darker urine.');
       write('stool-detail', care.newborn
         ? 'Black, sticky meconium is expected in the first days. After that, yellow, tan, or green can be normal. In the first month, less than one poop a day can be worth a call, especially if she’s feeding less.'
         : 'Yellow, tan, and green can all be normal. Formula-fed babies often poop most days and can sometimes go 1–2 days between soft stools. Check in about hard, dry stools or a sudden increase in watery stools.');
@@ -431,7 +491,7 @@
       write('fact-title', factTitle);
       write('fact', fact);
       get('development-source').href = stage.source;
-      write('feeding-source-note', 'Cards show general formula guidance for the displayed age. The daily estimates based on 3–4 hour intervals are examples. Milestones use broader age windows.');
+      write('feeding-source-note', 'Formula guidance is published for the first days and broader age ranges. Where available, Violet’s saved values show what you observed in the selected week. The daily estimates based on 3–4 hour intervals are examples.');
     }
 
     const birth = Date.parse(birthDate + 'T00:00:00Z') / dayMs;
@@ -443,9 +503,34 @@
     get('previous').addEventListener('click', () => choose(selectedWeek - 1));
     get('next').addEventListener('click', () => choose(selectedWeek + 1));
     get('current').addEventListener('click', () => choose(weekOf(birth, dayInArizona()), true));
+    get('observation-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const values = {};
+      for (const [key, id] of Object.entries(observationFields)) {
+        const input = get(id);
+        if (input.value !== '') values[key] = input.valueAsNumber;
+      }
+      if (values.feedsEnd !== undefined && (values.feeds === undefined || values.feedsEnd < values.feeds)) {
+        write('observation-status', 'Enter a typical feed count first, then an equal or higher count in To.');
+        return;
+      }
+      try {
+        localStorage.setItem('personal-hub.violet-week.' + selectedWeek, JSON.stringify(values));
+      } catch {
+        write('observation-status', 'This browser could not save the numbers.');
+        return;
+      }
+      observations.set(selectedWeek, values);
+      render();
+      write('observation-status', 'Saved for Week ' + selectedWeek + '.');
+    });
+
     choose(weekOf(birth, dayInArizona()), true);
     setInterval(() => {
-      if (lastDay !== dayInArizona()) render();
+      if (lastDay === dayInArizona()) return;
+      const previous = selectedWeek;
+      render();
+      if (previous !== selectedWeek) fillObservations(selectedWeek);
     }, 30000);
   </script>
 </body>
