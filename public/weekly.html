@@ -55,9 +55,8 @@
     .story > h2 { margin: 0 0 .65rem .1rem; }
     .story-grid { display: grid; grid-template-columns: 1fr; gap: .65rem; }
     .story h3 { margin: .28rem 0 .45rem; }
+    .story-stack .eyebrow { margin-bottom: .2rem; }
     .story p + p { margin-top: .35rem; }
-    .story ul { padding-left: 1.15rem; }
-    .story li + li { margin-top: .25rem; }
     .story-stack { display: grid; gap: .75rem; }
     .weekly-page .fact { background: linear-gradient(130deg, #44243a, #25172f); }
     .sources { margin-top: 1.25rem; font-size: .85rem; }
@@ -72,9 +71,8 @@
     .weekly-page details.callout { border-inline-start: 3px solid var(--orange); }
     .section-label { grid-column: 1 / -1; margin: .3rem .1rem 0; }
     .weekly-page .diaper-card { background: linear-gradient(145deg, #36264b, #22172e); }
-    .weekly-page .rest-card { background: linear-gradient(145deg, #39233e, #25172e); }
     @media (min-width: 700px) {
-      .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .story-grid { grid-template-columns: 1.1fr 1fr; }
     }
   </style>
@@ -102,7 +100,7 @@
           <strong id="age"></strong>
           <p class="sub" id="dates"></p>
         </section>
-        <h2 class="section-label">The daily numbers</h2>
+        <h2 class="section-label">Violet’s numbers this week</h2>
         <section class="panel stat size-card">
           <h2 class="eyebrow">Bottle size</h2>
           <strong id="size"></strong>
@@ -123,22 +121,13 @@
           <strong id="poop"></strong>
           <p class="sub" id="poop-note"></p>
         </section>
-        <section class="panel stat rest-card">
-          <h2 class="eyebrow">Sleep · 24 h</h2>
-          <strong id="sleep"></strong>
-          <p class="sub" id="sleep-note"></p>
-        </section>
-        <section class="panel stat rest-card">
-          <h2 class="eyebrow">Tummy time</h2>
-          <strong id="tummy"></strong>
-          <p class="sub" id="tummy-note"></p>
-        </section>
+
       </div>
-      <p class="muted small feeding-note">Saved numbers show Violet’s pattern for the selected week. Other numbers are broad age guides, and the feeding guide is for formula.</p>
+      <p class="muted small feeding-note">Each week has its own entries. Blank cards are ready for your observations.</p>
       <details class="panel observations">
-        <summary>Update Violet’s numbers</summary>
+        <summary>Update Violet’s numbers for this week</summary>
         <form id="observation-form">
-          <p class="muted small">Enter what’s typical for this week. Leave a field blank to show the age guide. Entries stay in this browser.</p>
+          <p class="muted small">Enter what’s typical for the selected week. Leave a field blank if you haven’t counted it. Entries stay in this browser.</p>
           <div class="observation-fields">
             <label>Bottle (mL)<input id="observed-bottle" type="number" inputmode="numeric" min="1" max="999" step="1"></label>
             <fieldset>
@@ -158,20 +147,18 @@
         <h2 id="story-title">This week with Violet</h2>
         <div class="story-grid">
           <section class="panel">
-            <p class="eyebrow">Milestones to notice</p>
+            <p class="eyebrow">What to notice this week</p>
             <h3 id="milestone-title"></h3>
-            <ul id="milestones"></ul>
+            <p id="milestones"></p>
             <p class="muted small" id="milestone-note"></p>
           </section>
           <div class="story-stack">
             <section class="panel">
               <p class="eyebrow">Try together</p>
-              <h3 id="activity-title"></h3>
               <p id="activity"></p>
             </section>
             <section class="panel fact">
               <p class="eyebrow">Tiny wonder ✦</p>
-              <h3 id="fact-title"></h3>
               <p id="fact"></p>
             </section>
           </div>
@@ -203,8 +190,9 @@
       </section>
 
       <details class="panel sources">
-        <summary>Sources and age ranges</summary>
-        <p id="feeding-source-note"></p>
+        <summary>General age guides and sources</summary>
+        <p>These references cover broader ages. Follow Violet’s cues and any plan from her pediatrician.</p>
+        <ul id="general-numbers"></ul>
         <ul>
           <li><a href="https://www.cdc.gov/infant-toddler-nutrition/formula-feeding/how-much-and-how-often.html">CDC formula feeding guide</a></li>
           <li><a href="https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/amount-and-schedule-of-formula-feedings.aspx">AAP formula feeding guide</a></li>
@@ -216,7 +204,7 @@
           <li><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Getting-Your-Baby-to-Sleep.aspx">AAP newborn sleep</a> · <a href="https://aasm.org/resources/pdf/pressroom/pediatric-sleep-duration-consensus.pdf">AASM sleep by age</a></li>
           <li><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Back-to-Sleep-Tummy-to-Play.aspx">AAP safe sleep and tummy time</a></li>
           <li><a href="https://www.healthychildren.org/English/ages-stages/baby/pages/First-Month-Physical-Appearance-and-Growth.aspx">AAP first-month growth</a> · <a href="https://www.healthychildren.org/English/health-issues/conditions/fever/Pages/fever-and-your-baby.aspx">AAP fever guidance</a></li>
-          <li><a id="development-source" href="https://www.cdc.gov/act-early/milestones/">Development and activity source</a></li>
+          <li><a href="https://www.cdc.gov/act-early/milestones/">CDC developmental milestones by age</a></li>
         </ul>
       </details>
     </div>
@@ -233,102 +221,61 @@
     });
     const get = id => document.getElementById(id);
     const write = (id, text) => { get(id).textContent = text; };
-    const aap = 'https://www.healthychildren.org/English/ages-stages/baby/';
-    const cdc = 'https://www.cdc.gov/act-early/milestones/';
-    const stages = [
-      {
-        through: 1, title: 'Getting to know the world', window: 'Around the first month',
-        source: aap + 'Pages/Developmental-Milestones-1-Month.aspx',
-        weeks: [
-          ['Watch for a brief gaze at your face.', 'She may startle at a sudden noise.',
-            'Face time', 'During a calm, alert moment, hold her close and talk softly.',
-            'Your face is the show', 'Newborns see most clearly from about 8 to 12 inches away, roughly the distance to your face during a feed.'],
-          ['Notice whether she briefly follows a face or nearby object.', 'You might see her hands spend a lot of time in little fists.',
-            'Say hello', 'Pick a short phrase to say during diaper changes and pause for her expression or movement.',
-            'A high-contrast world', 'Bold light-and-dark shapes are easier for newborns to see than subtle color differences.'],
-          ['Look for a response to familiar voices.', 'She may turn her head while lying on her tummy.',
-            'The kitchen tour', 'Talk through something ordinary while holding her. Even a tour of the kitchen gives her a voice to listen to.',
-            'A familiar soundtrack', 'Newborns can recognize voices they heard before birth. Your everyday chatter is part of the soundtrack.'],
-          ['Look for longer moments of quiet attention to a close face.', 'Notice the little head turns and gradually steadier movements.',
-            'Awake tummy time', 'Try a short, supervised tummy-time session while she’s awake. Get down where she can see you.',
-            'Built-in grip', 'A newborn’s grasp can be a reflex: a finger in her palm may make those tiny hands close around it.']
-        ]
-      },
-      {
-        through: 2, title: 'Faces, sounds, and first smiles', window: 'By around 2 months',
-        source: cdc + '2-months.html',
-        weeks: [
-          ['She may smile back when you smile.', 'Listen for sounds besides crying.',
-            'Leave a little pause', 'Say something, pause, and give her a chance to answer with a sound or a look.',
-            'The first conversations', 'A conversation can be a glance, a sound, and a pause. That back-and-forth is already practice for communication.'],
-          ['Look for her to track you with her eyes as you move nearby.', 'Her hands may open briefly more often.',
-            'Slow-motion peek', 'Move your face gently side to side during a quiet moment and see if her eyes follow.',
-            'Those tiny hands', 'Briefly opening her hands is one of the little movement changes on the two-month checklist.'],
-          ['She may settle when held or spoken to.', 'Watch for a brief head lift during tummy time.',
-            'A song on repeat', 'Choose a simple song you both enjoy and sing it softly while she’s alert.',
-            'Smiles have an audience now', 'A smile in response to your face or voice is one of the social milestones to look for over this stage.']
-        ]
-      },
-      {
-        through: 4, title: 'More back-and-forth', window: 'By around 4 months',
-        source: cdc + '4-months.html',
-        weeks: [
-          ['Watch for her turning toward your voice.', 'Listen for coos that sound a little like vowels.',
-            'Coo and copy', 'Copy a sound she makes, then wait to see what comes back.',
-            'Her voice has range', 'Cooing and answering your voice give her another way to get your attention.'],
-          ['She may hold a toy placed in her hand.', 'Look for her bringing her hands toward her mouth.',
-            'Meet the rattle', 'Offer a lightweight, baby-safe toy during floor play and watch how she explores it.',
-            'Hands are fascinating', 'Looking at her hands with interest is one of the four-month milestones.'],
-          ['She may hold her head steadier while you hold her.', 'Listen for a little chuckle during play.',
-            'The grin game', 'Smile, wait, and see what she does. Try it again when she seems interested.',
-            'A chuckle before a laugh', 'Little chuckles can appear before full belly laughs.']
-        ]
-      },
-      {
-        through: 6, title: 'Reaching and rolling', window: 'By around 6 months',
-        source: cdc + '6-months.html',
-        weeks: [
-          ['Look for purposeful reaches toward a favorite toy.', 'She may take turns making sounds with you.',
-            'Toy just in sight', 'While she’s awake on the floor and you’re with her, put a baby-safe toy within easy reach.',
-            'A reach starts with a look', 'Picking a toy to reach for brings her eyes and hands into the same little plan.'],
-          ['She may roll from tummy to back.', 'You might hear a laugh or a raspberry.',
-            'Raspberry duet', 'Copy her silly sound, then pause. Let her decide if there’s a second verse.',
-            'Silly sounds count', 'Blowing raspberries is one of the communication milestones on the six-month checklist.'],
-          ['Look for her leaning on her hands while sitting with support nearby.', 'She may smile at her reflection.',
-            'Mirror hello', 'Hold her near a mirror and take turns making faces.',
-            'The baby in the mirror', 'Enjoying her reflection is a milestone at this age, even before she knows who it is.']
-        ]
-      },
-      {
-        through: 9, title: 'Little discoveries', window: 'By around 9 months',
-        source: cdc + '9-months.html',
-        weeks: [
-          ['She may look when you say her name.', 'Listen for repeated sounds like “ba-ba-ba.”',
-            'Name and wait', 'Say her name during play, then pause to see whether she looks over.',
-            'The syllable remix', 'Repeating a syllable is part of early babbling. It’s fun to copy it and hear what she does next.'],
-          ['Watch for her moving a toy from one hand to the other.', 'She may begin sitting without support.',
-            'Pass it over', 'Offer a baby-safe toy during supervised floor play and see whether it switches hands.',
-            'Look where it went', 'Searching for an object that drops out of sight is one of the nine-month milestones.'],
-          ['Look for different facial expressions as she plays.', 'She may lift her arms to ask to be picked up.',
-            'Peekaboo pause', 'Play peekaboo and pause before reappearing to see whether she reacts.',
-            'A request without words', 'Arms up can be a surprisingly clear way to ask for a lift.']
-        ]
-      },
-      {
-        through: 12, title: 'Gestures and games', window: 'By around 12 months',
-        source: cdc + '1-year.html',
-        weeks: [
-          ['Look for a wave or another familiar gesture.', 'She may join in a simple social game.',
-            'A wave at the door', 'Wave when someone leaves and give her a chance to join in.',
-            'A wave carries meaning', 'Gestures let her take part in a goodbye before she can say the word.'],
-          ['She may put an object into a container.', 'Look for a more precise thumb-and-finger grasp during meals.',
-            'In and out', 'Give her a large, baby-safe toy and a wide container to drop it into.',
-            'The tiny pinch', 'Picking something up with a thumb and index finger is called the pincer grasp.'],
-          ['She may pull herself up to stand.', 'Look for steps while holding on to furniture.',
-            'A floor-level adventure', 'Let her explore a childproofed space with you close by and stable furniture if she wants to pull up.',
-            'Steps can start sideways', 'Moving along furniture while holding on is often called cruising.']
-        ]
-      }
+    // One focus, observation, activity, and fact for each selected week.
+    const weeklyRecaps = [
+      ["Close-up week","During an alert moment, notice when Violet settles her eyes on your face.","Hold her where you can look at each other and say hello slowly.","A newborn sees best roughly a forearm’s distance away, about 8–12 inches."],
+      ["The familiar voice","Notice whether her face or body quiets when a familiar person starts talking.","Say the same gentle hello when you pick her up, then wait a beat.","Your voice was part of her world before she was born."],
+      ["Bold shapes","See whether she looks a little longer at a clear light-and-dark edge.","Hold up a simple black-and-white picture while she’s comfortable in your arms.","Big differences between light and dark are easier for newborn eyes to pick out."],
+      ["Little head turns","During awake tummy time, notice which way she turns her head and whether she tries a brief lift.","Get down at eye level during one short, supervised tummy-time session and say her name from the side she’s looking toward.","A hand closing around your finger can be a reflex. That tiny grip is built in."],
+      ["Quiet and alert","Look for a moment when her eyes are open and her body is still enough to take you in.","Wait for a calm pause after a diaper change, then give her a few moments of face time.","Being awake and being ready to interact are two different things. A quiet pause gives you a chance to notice the difference."],
+      ["Hands opening","Notice whether her fingers briefly uncurl while she’s relaxed.","Give her space to move her arms while she lies on her back and you sit beside her.","Even a brief open hand is a movement you can notice before reaching becomes intentional."],
+      ["Eyes on you","See if her eyes stay with you as you move a little to one side.","Move your face slowly from the middle to one side and back while she’s looking at you.","Eye tracking can start with short trips. You don’t need to move far to make it a game."],
+      ["A sound besides crying","Listen for a tiny vowel-like sound or another quiet noise when she’s content.","Copy one little sound and pause before making another.","An exchange can be just two noises with a bit of silence between them."],
+      ["The back-and-forth smile","Watch her face when you smile and give her time to respond.","Try a slow smile during a calm moment and see if she wants another round.","A smile in response to someone else is a social milestone."],
+      ["Turning toward a voice","Notice where her eyes or head go when you talk from beside her.","Try a soft hello from one side while another adult holds her securely.","Listening and turning toward the sound are two parts of the same little move."],
+      ["Meeting her hands","See whether she spends time looking at her own fingers.","Let her move freely on a blanket while you sit nearby and describe what you see.","Her hands can be as interesting to look at as any toy."],
+      ["Holding on","Watch what she does when a light baby-safe toy touches her palm.","Offer an easy-to-grasp rattle while supporting her comfortably. Let her release it when she wants.","Holding a toy placed in the hand is different from reaching out and grabbing it."],
+      ["A steadier head","While holding her securely, notice brief moments when her head stays steadier.","Talk at eye level during supported upright cuddles.","Head control shows up in different positions, including when you hold her upright."],
+      ["The little chuckle","Listen for a small laugh-like sound when a face or game delights her.","Repeat a funny face she seems to enjoy, with a pause between rounds.","A chuckle can show up before a full belly laugh."],
+      ["Hands to mouth","Notice how she brings a hand toward her mouth when awake and calm.","Let her explore her hands while you sit beside her during floor time.","Bringing hands to the mouth is one way babies explore, and context helps you tell it apart from hunger."],
+      ["A push on her elbows","During supervised tummy time, look for weight settling onto her forearms.","Put a baby-safe toy in view or get down where she can see your face.","Propping on forearms and pushing up on straight arms are different steps."],
+      ["More vocal turns","Listen for a sound in the gap after you speak.","Make one soft vowel sound, then give her a longer turn than feels natural.","The pause is often the whole game. It gives her space to take a turn."],
+      ["A toy worth reaching for","Notice which object gets both her eyes and her hands moving.","During supervised floor play, set one light baby-safe toy within easy reach.","Reaching brings vision and movement together."],
+      ["Tap, swipe, reach","Watch whether she swipes at a toy before making contact.","Hold a simple toy still in a spot she can comfortably reach.","A swipe and a grasp can be two separate experiments."],
+      ["The mirror game","Notice whether she looks longer at a reflection or at your face beside it.","Hold her securely by a mirror and take turns making expressions.","Enjoying a reflection comes before understanding who’s in the mirror."],
+      ["Raspberry season","Listen for a lip buzz or a bolder new vowel sound.","Copy her raspberry if she makes one, then pause to hear her version.","Blowing raspberries shows up on the six-month communication checklist."],
+      ["Rolling experiments","Look for a turn of the shoulder or hips during awake floor time.","Give her a clear space to move on the floor while you stay beside her.","A partial turn can be interesting to watch even if it never turns into a full roll that day."],
+      ["Pushing up","During tummy time, see whether she lifts her chest a little higher.","Put a favorite toy where she can see it during a short supervised session.","Pushing up on straight arms changes the view she gets from the floor."],
+      ["Laugh and repeat","Notice what gets the biggest laugh: a look, a sound, or a movement.","Choose one silly thing she likes and repeat it slowly.","A favorite game can be as small as one familiar face doing something predictable."],
+      ["Hands for balance","While safely supported in sitting, notice whether she leans forward onto her hands.","Sit close on the floor and let her try using her hands for support when she’s ready.","Leaning on her hands makes a wider base while sitting."],
+      ["Weather report","See whether she watches longer when you change your face or tone.","Describe the weather in a playful voice, then switch to a quiet voice and see what she notices.","She can listen to the way you say a word long before its meaning matters."],
+      ["Passing it over","Watch for a toy traveling from one hand to the other.","Offer a light baby-safe toy with room to hold it in both hands.","One toy can make both hands part of the same game."],
+      ["Baby’s choice","Notice which of two safe toys she reaches toward first.","Offer two familiar toys within easy reach and let her pick.","Reaching is a way to make a choice before she has words."],
+      ["Name and pause","See whether she looks over when you say her name during play.","Say her name once and wait instead of repeating it quickly.","Responding to her name is one item on the nine-month milestone checklist."],
+      ["The syllable remix","Listen for repeated sounds such as ba-ba-ba.","Copy one of her sounds, then try it once in a quieter voice.","Babbling can use a repeated syllable even before it means a specific word."],
+      ["Where did it go?","Notice whether her eyes follow a toy that slips out of view.","Let a large toy roll gently behind your leg and pause before bringing it back.","Looking for a dropped object is an early clue that out of sight can still be on her mind."],
+      ["Arms up","Watch for what she does when she wants to be picked up.","Pause briefly before lifting her to see whether she reaches or raises her arms.","A gesture can ask a question before a baby has words."],
+      ["Two toys, one beat","Notice how she explores two baby-safe toys at once.","Offer two soft blocks and see whether she brings them together.","Banging objects together is part of the nine-month cognitive checklist."],
+      ["A room full of expressions","Watch her face when something surprises or amuses her.","Make an exaggerated surprised face, then switch back to a smile.","Different expressions give her more than one way to tell you how play is going."],
+      ["A new sitting view","During floor play, notice how she balances and what she looks at from sitting.","Stay close and place a baby-safe toy where she can reach comfortably from her usual position.","Sitting frees up a hand to explore when she has enough balance."],
+      ["The peekaboo pause","Look for a change in her face just before you reappear.","Hide your own face behind your hands, then pause before opening them.","The anticipation can be as much fun as the reveal."],
+      ["Letting a toy go","Notice what she does after releasing a toy onto the floor.","Offer a soft toy over a clear patch of floor and watch where she looks when it drops.","A dropped toy turns one action into a second question: where did it go?"],
+      ["Telling you with her face","Look for different expressions when a game starts and when it stops.","Play a familiar game, pause, and let her signal whether she wants more.","An expression can be part of a conversation just like a sound or gesture."],
+      ["A game she knows","Notice whether she reacts to the opening of a familiar song or game.","Start a short clapping rhyme and let her listen or join in.","A familiar game lets her learn what usually comes next."],
+      ["One object, one container","See what she does when a large toy is beside an open container.","Drop a big baby-safe block into a wide container, then hand her the block.","Putting an object into a container is on the one-year milestone checklist."],
+      ["In and out again","Notice whether she’s more interested in filling a container or emptying it.","Offer two large toys and one wide container during floor play.","The same container offers two experiments depending on which way the toys go."],
+      ["A wave at the door","Watch for a hand motion when someone says goodbye.","Wave slowly when leaving the room and give her a chance to join.","Gestures can take part in a goodbye before words do."],
+      ["Songs with actions","Notice whether she watches your hands during a song.","Sing a simple rhyme with the same easy hand motion each time.","Songs can give sounds and movements a familiar order."],
+      ["A tiny pinch","During a meal with safe textures and sizes, notice how she uses her fingers.","If she already eats finger foods, offer a familiar safe food while she sits upright and you supervise.","Picking up something with the thumb and index finger is called a pincer grasp."],
+      ["A toy under a cloth","Notice whether she looks for a toy she saw you hide.","Partly cover a large toy with a cloth during supervised play and leave an edge showing.","Finding a hidden object turns peekaboo into a hands-on game."],
+      ["Up to stand","If she already tries to pull up, notice how she uses her legs and hands together.","Keep a clear, childproofed floor area beside stable furniture while you stay close.","Pulling up to stand is a separate skill from walking on her own."],
+      ["A sideways adventure","If she already moves along furniture, look at how she repositions her hands.","Make room beside stable furniture and stay close while she moves at her own pace.","Steps taken while holding furniture are often called cruising."],
+      ["A sound for you","Listen for a familiar sound she uses when she wants a parent’s attention.","Answer a sound she aims at you, even if it’s still mostly babble.","A special name for a parent or caregiver is one of the one-year language milestones."],
+      ["The little signal","Notice which gesture she uses most often when she wants to be understood.","Play a turn-taking game and wait to see whether she asks for another turn.","A gesture and a look can carry a lot of meaning together."],
+      ["Finding the missing piece","See whether she looks for a familiar toy after it disappears from view.","Hide part of a baby-safe toy while she watches and let her decide how to search.","Searching involves remembering something she can no longer see."],
+      ["A new kind of turn","Watch whether she gives, drops, or puts away a toy during play.","Roll a soft ball slowly between you and pause whenever it’s her turn.","Taking turns can happen with an object as well as with a sound."],
+      ["Favorite games, revisited","Notice which game now gets the clearest signal for another round.","Pick one favorite from the past few weeks and play it the way she likes.","Repeating a game makes it easy to spot what she does differently."],
+      ["First birthday week","Think back on the sounds, gestures, and games that feel like Violet’s now.","Choose one favorite game to play together and save a note about what she does.","A first-year recap can be as simple as the little things you’ve watched change."]
     ];
 
     let selectedWeek;
@@ -385,7 +332,7 @@
       const age = day - birth;
       if (day >= monthAt(birth, 12)) return ['Varies', 'Around the 1-year transition', 'Varies', 'Ask about the next feeding stage'];
       if (age < 7) return ['30–60 mL', 'Formula guide for the first days', '8–12', 'Common newborn formula pattern'];
-      if (day < monthAt(birth, 1)) return ['90–120 mL', 'Formula example by the end of month 1', '8–12', 'Newborn formula guide, varies by baby'];
+      if (day < monthAt(birth, 1)) return ['90–120 mL', 'Formula example around 1 month', '8–12', 'Newborn formula guide, varies by baby'];
       if (day < monthAt(birth, 2)) return ['90–120 mL', 'Formula example around 1 month', 'About 6–8', 'If feeding every 3–4 hours'];
       if (day < monthAt(birth, 4)) return ['About 150 mL', 'Formula example around 2 months', 'About 6–8', 'If feeding every 3–4 hours'];
       if (day < monthAt(birth, 6)) return ['About 180 mL', 'Formula example around 4 months', 'Varies', 'As bottles get larger'];
@@ -441,8 +388,7 @@
       const age = completedWeeks === 0
         ? (ageDays === 0 ? 'Newborn' : ageDays + (ageDays === 1 ? ' day old' : ' days old'))
         : completedWeeks + (completedWeeks === 1 ? ' week' : ' weeks') + (extraDays && isCurrent ? ' + ' + extraDays + (extraDays === 1 ? ' day' : ' days') : '') + ' old';
-      const stage = stages.find(item => ref < monthAt(birth, item.through)) ?? stages.at(-1);
-      const [first, second, activityTitle, activity, factTitle, fact] = stage.weeks[(selectedWeek - 1) % stage.weeks.length];
+      const [focus, notice, activity, fact] = weeklyRecaps[selectedWeek - 1];
       const [size, sizeNote, count, countNote] = feeding(birth, ref);
       get('week').value = String(selectedWeek);
       get('previous').disabled = selectedWeek <= 1;
@@ -453,45 +399,49 @@
       write('dates', dateRange.formatRange(new Date(start * dayMs), new Date(end * dayMs)));
       const saved = observedWeek(selectedWeek);
       const observedNote = 'Violet’s pattern this week';
-      write('size', saved.bottle === undefined ? size : saved.bottle + ' mL');
-      write('size-note', saved.bottle === undefined ? sizeNote : observedNote);
+      const missing = '—';
+      const unrecorded = 'No count saved for this week';
+      write('size', saved.bottle === undefined ? missing : saved.bottle + ' mL');
+      write('size-note', saved.bottle === undefined ? 'No bottle size saved for this week' : observedNote);
       const feedRange = saved.feedsEnd > saved.feeds ? saved.feeds + '–' + saved.feedsEnd : saved.feeds;
-      write('count', feedRange ?? count);
-      write('count-note', saved.feeds === undefined ? countNote : observedNote);
-      const care = dailyCare(birth, ref);
-      for (const key of ['wet', 'poop', 'sleep', 'tummy']) {
-        write(key, saved[key] ?? care[key][0]);
-        write(key + '-note', saved[key] === undefined ? care[key][1] : observedNote);
+      write('count', feedRange ?? missing);
+      write('count-note', saved.feeds === undefined ? unrecorded : observedNote);
+      for (const key of ['wet', 'poop']) {
+        write(key, saved[key] ?? missing);
+        write(key + '-note', saved[key] === undefined ? unrecorded : observedNote);
       }
+      const care = dailyCare(birth, ref);
+      const references = [
+        ['Formula bottle size', size, sizeNote], ['Formula feeds', count, countNote],
+        ['Wet diapers', ...care.wet], ['Poops', ...care.poop],
+        ['Sleep', ...care.sleep], ['Tummy time', ...care.tummy]
+      ];
+      get('general-numbers').replaceChildren(...references.map(([heading, value, note]) => {
+        const item = document.createElement('li');
+        item.textContent = heading + ' · ' + value + ' · ' + note;
+        return item;
+      }));
       write('feeding-cues', 'Hands to mouth or turning toward the bottle can signal hunger. Closing her mouth or turning away can mean she’s full.');
       write('growth', care.newborn
-        ? 'Many newborns regain their birth weight by about 2 weeks. Growth spurts can happen around days 7–10 and again around 3–6 weeks. Your pediatrician can help interpret her weight trend.'
+        ? 'At a weight check, ask how her weight compares with her last visit. Bring her usual bottle size and feed count so the pediatrician can consider them alongside her growth.'
         : 'At well visits, follow her growth over time. Weight, length, and head circumference together tell more than a single measurement.');
       write('diaper-detail', 'Count pee and poop separately. A diaper with both counts once in each category. The wet-diaper guide is a minimum. Watch for a noticeable drop from her usual count or darker urine.');
       write('stool-detail', care.newborn
-        ? 'Black, sticky meconium is expected in the first days. After that, yellow, tan, or green can be normal. In the first month, less than one poop a day can be worth a call, especially if she’s feeding less.'
+        ? 'Yellow, tan, or green can be normal after the first dark, sticky stools. If poops become less frequent and Violet is also feeding less, check in with her pediatrician.'
         : 'Yellow, tan, and green can all be normal. Formula-fed babies often poop most days and can sometimes go 1–2 days between soft stools. Check in about hard, dry stools or a sudden increase in watery stools.');
       write('play-detail', care.age < 49
-        ? 'If she’s comfortable, start with 3–5 minutes of awake, supervised tummy time 2–3 times a day and build gradually toward 15–30 minutes total by 7 weeks.'
+        ? 'Try short stretches of awake, supervised tummy time when she’s calm. Pause when she’s tired or fussy.'
         : 'Offer supervised floor play while she’s awake. Keep sessions short if she’s tired or fussy.');
       write('fever', ref <= monthAt(birth, 3)
         ? 'At 3 months or younger, a rectal temperature of 100.4°F (38°C) or higher means call right away.'
         : 'For fever with poor feeding or signs of dehydration, call her pediatrician for guidance.');
       if (lastSafetyWeek !== selectedWeek) get('callout').open = ref <= monthAt(birth, 3);
       lastSafetyWeek = selectedWeek;
-      write('milestone-title', stage.title);
-      get('milestones').replaceChildren(...[first, second].map(text => {
-        const item = document.createElement('li');
-        item.textContent = text;
-        return item;
-      }));
-      write('milestone-note', stage.window + '. Timing varies from baby to baby.');
-      write('activity-title', activityTitle);
+      write('milestone-title', focus);
+      write('milestones', notice);
+      write('milestone-note', 'Something to watch for at her pace.');
       write('activity', activity);
-      write('fact-title', factTitle);
       write('fact', fact);
-      get('development-source').href = stage.source;
-      write('feeding-source-note', 'Formula guidance is published for the first days and broader age ranges. Where available, Violet’s saved values show what you observed in the selected week. The daily estimates based on 3–4 hour intervals are examples.');
     }
 
     const birth = Date.parse(birthDate + 'T00:00:00Z') / dayMs;
