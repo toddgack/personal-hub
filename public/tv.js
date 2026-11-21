@@ -1,4 +1,5 @@
 import { ZONE, DAY, localDay, addDays, weekStart, timed, episodeDay, episodeTime, episodeCode, seasonSummary, showState, releaseGaps, calendarText } from './tv-core.js';
+import { SharedTVList } from './tv-shared.js';
 
 const get = id => document.getElementById(id);
 const prefix = 'personal-hub.tv.show.';
@@ -14,6 +15,10 @@ let refreshing = false;
 let queue = Promise.resolve();
 let lastRequest = 0;
 let storageAvailable = true;
+const shared = new SharedTVList();
+let syncing = false;
+let connected = false;
+let syncFailed = false;
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -60,7 +65,7 @@ function loadLibrary() {
     }
   } catch {
     storageAvailable = false;
-    announce('This browser cannot save your list. Shows will stay available for this visit.');
+    announce('This browser cannot cache schedules. The shared list can still load while you are online.');
   }
 }
 
@@ -70,7 +75,63 @@ function save(item) {
     localStorage.setItem(prefix + item.show.id, JSON.stringify(item));
   } catch {
     storageAvailable = false;
-    announce('The browser could not save this change. Keep this page open to retain the current list.');
+    announce('This browser could not cache schedules. Your shared list is saved in Cloudflare.');
+  }
+}
+
+function applySharedList() {
+  const members = shared.members();
+  const ids = new Set(members.map(row => row.id));
+  for (const id of library.keys()) {
+    if (ids.has(id)) continue;
+    library.delete(id);
+    failures.delete(id);
+    try { localStorage.removeItem(prefix + id); } catch {}
+  }
+  for (const row of members) {
+    const item = library.get(row.id) || {
+      show: { id: row.id, name: row.name, status: 'Unknown' },
+      episodes: [], seasons: [], checked: 0
+    };
+    save({ ...item, archived: row.archived });
+  }
+  if (detailId != null && !library.has(detailId)) {
+    get('show-dialog').close();
+    detailId = null;
+  }
+  render();
+  if (detailId != null && get('show-dialog').open) renderDetail(false);
+}
+
+async function syncList(manual = false) {
+  if (syncing) return;
+  syncing = true;
+  get('sync').disabled = true;
+  get('sync-state').textContent = connected ? 'Syncing household list…' : 'Connecting household list…';
+  try {
+    const previousVersion = shared.version;
+    const firstConnection = !connected;
+    if (connected) await shared.pull();
+    else await shared.connect([...library.values()]);
+    const wasEmpty = library.size === 0;
+    connected = true;
+    if (firstConnection || shared.version !== previousVersion) applySharedList();
+    if (wasEmpty && library.size && ![...library.values()].some(item => showState(item).group === tab)) {
+      tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
+      render();
+    }
+    get('sync-state').textContent = 'Household list synced · shared across devices';
+    if (manual || syncFailed) announce('Shared list is up to date.');
+    syncFailed = false;
+    // Episode details are a local cache. The saved show membership comes from Cloudflare.
+    refreshSchedules();
+  } catch {
+    syncFailed = true;
+    get('sync-state').textContent = 'Shared list offline · saved schedules available';
+    if (manual || !connected) announce('The household list could not sync. Your existing shows are still on this device. Use Sync list to retry.');
+  } finally {
+    syncing = false;
+    get('sync').disabled = false;
   }
 }
 
@@ -159,12 +220,16 @@ async function addShow(id) {
   renderSearch();
   get('search-status').textContent = 'Getting episodes and season dates…';
   try {
+    if (!connected) throw new Error('Use Sync list to connect the household list before adding a show.');
     const item = await fetchShow(id);
+    await shared.change(item);
     save(item);
+    applySharedList();
     tab = showState(item).group;
     render();
-    get('search-status').textContent = item.show.name + (storageAvailable ? ' added to your guide.' : ' added for this visit. Browser storage is unavailable.');
+    get('search-status').textContent = item.show.name + ' added to the household guide.';
   } catch (error) {
+    if (shared.ready && connected) applySharedList();
     get('search-status').textContent = error.message || 'Could not add this show. Try again.';
   } finally {
     pending.delete(id);
@@ -184,7 +249,7 @@ async function refreshSchedules(force = false) {
     if (!library.has(previous.show.id)) continue;
     try {
       const updated = await fetchShow(previous.show.id);
-      if (!library.has(previous.show.id)) continue;
+      if (!library.has(previous.show.id) || (connected && !shared.members().some(row => row.id === previous.show.id))) continue;
       updated.archived = library.get(previous.show.id).archived;
       save(updated);
       failures.delete(previous.show.id);
@@ -222,14 +287,14 @@ function renderHero() {
   }
   const checks = [...library.values()].map(item => item.checked || 0);
   const oldest = checks.length ? Math.min(...checks) : 0;
-  get('updated').textContent = oldest ? 'Oldest schedule check · ' + new Intl.DateTimeFormat('en-US', { timeZone: ZONE, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(oldest)) : 'Your list is saved in this browser.';
+  get('updated').textContent = oldest ? 'Oldest schedule check · ' + new Intl.DateTimeFormat('en-US', { timeZone: ZONE, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(oldest)) : library.size ? 'Loading episode schedules…' : 'Add a show to your household list.';
 }
 
 function renderCard(item) {
   const state = showState(item);
   const card = node('article', 'show-card');
   const body = node('div', 'card-body');
-  body.append(node('p', 'card-meta', channel(item.show)), button(item.show.name, 'detail', item.show.id, 'show-name'), node('span', 'tag' + (state.label === 'Awaiting dates' ? ' warm' : ''), state.label));
+  body.append(node('p', 'card-meta', channel(item.show)), button(item.show.name, 'detail', item.show.id, 'show-name'), node('span', 'tag' + (state.label === 'Awaiting dates' ? ' warm' : ''), item.checked ? state.label : 'Loading schedule'));
   if (state.next) {
     body.append(node('p', 'card-next', episodeCode(state.next) + ' · ' + formatDay(episodeDay(state.next))));
   } else {
@@ -419,42 +484,57 @@ get('season-download').addEventListener('click', () => {
   const number = Number(get('season').value);
   download([{ item, episodes: item.episodes.filter(episode => episode.season === number) }], 'tv-' + detailId + '-season-' + number);
 });
-get('archive-show').addEventListener('click', () => {
+get('archive-show').addEventListener('click', async () => {
+  if (pending.has(detailId)) return;
   const item = library.get(detailId);
-  item.archived = !item.archived;
-  save(item);
-  tab = showState(item).group;
-  render();
-  renderDetail(false);
+  const id = item.show.id;
+  pending.add(id);
+  get('archive-show').disabled = true;
+  try {
+    await shared.change({ ...item, archived: !item.archived });
+    applySharedList();
+    tab = showState(library.get(id)).group;
+    render();
+    announce(item.show.name + ' updated for both devices.');
+  } catch (error) {
+    if (connected) applySharedList();
+    announce(error.message || 'The change could not sync. Try again.');
+  } finally {
+    pending.delete(id);
+    get('archive-show').disabled = false;
+  }
 });
-get('remove-show').addEventListener('click', () => {
+get('remove-show').addEventListener('click', async () => {
+  if (pending.has(detailId)) return;
   const item = library.get(detailId);
-  try { localStorage.removeItem(prefix + detailId); }
-  catch { announce('This browser could not save the removal.'); return; }
-  library.delete(detailId);
-  failures.delete(detailId);
-  get('show-dialog').close();
-  detailId = null;
-  render();
-  announce(item.show.name + ' removed. You can add it again through search.');
+  const id = item.show.id;
+  pending.add(id);
+  get('remove-show').disabled = true;
+  try {
+    await shared.change(item, true);
+    applySharedList();
+    announce(item.show.name + ' removed from the household guide. You can add it again through search.');
+  } catch (error) {
+    if (connected) applySharedList();
+    announce(error.message || 'The removal could not sync. Try again.');
+  } finally {
+    pending.delete(id);
+    get('remove-show').disabled = false;
+  }
 });
 get('previous-week').addEventListener('click', () => { displayedWeek = addDays(displayedWeek, -7); renderWeek(); });
 get('next-week').addEventListener('click', () => { displayedWeek = addDays(displayedWeek, 7); renderWeek(); });
 get('this-week').addEventListener('click', () => { displayedWeek = weekStart(localDay()); renderWeek(); });
 window.addEventListener('storage', event => {
-  if (event.key && !event.key.startsWith(prefix)) return;
-  library.clear();
-  loadLibrary();
-  if (detailId != null && !library.has(detailId)) { get('show-dialog').close(); detailId = null; }
-  render();
-  if (detailId != null && get('show-dialog').open) renderDetail(false);
+  if (!event.key || event.key.startsWith(prefix)) syncList();
 });
+get('sync').addEventListener('click', () => syncList(true));
 loadLibrary();
 if (library.size && ![...library.values()].some(item => showState(item).group === 'Active')) {
   tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
 }
 render();
-refreshSchedules();
+syncList();
 let lastToday = localDay();
 setInterval(() => {
   const today = localDay();
@@ -466,5 +546,9 @@ setInterval(() => {
   if (document.visibilityState === 'visible') refreshSchedules();
 }, 60000);
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') { render(); refreshSchedules(); }
+  if (document.visibilityState === 'visible') { render(); syncList(); }
 });
+window.addEventListener('online', () => syncList());
+setInterval(() => {
+  if (document.visibilityState === 'visible') syncList();
+}, 15000);

@@ -30,7 +30,8 @@ label { display: grid; gap: .35rem; font-size: .9rem; font-weight: 650; }
 .hero h2 { margin: .35rem 0; font-size: clamp(1.5rem, 4vw, 2.2rem); }
 .hero p:last-child { color: #eee0f0; }
 .hero-actions { display: grid; gap: .5rem; flex: 0 0 auto; }
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; margin: .85rem 0; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem; margin: .85rem 0; }
+.toolbar > div { flex: 1 1 17rem; }
 #status:empty { display: none; }
 #status { margin: .75rem 0; padding: .75rem; border-left: 3px solid #C83803; background: #201325; border-radius: .5rem; font-size: .9rem; }
 .tabs { display: flex; gap: .35rem; border-bottom: 1px solid var(--line); padding-bottom: .6rem; margin-top: 1.75rem; }

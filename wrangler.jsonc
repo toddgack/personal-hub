@@ -1,8 +1,18 @@
-
 {
   "name": "personal-hub",
   "compatibility_date": "2026-11-10",
+  "main": "./worker.js",
   "assets": {
-    "directory": "./public"
-  }
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/tv/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "TV_LIST", "class_name": "HouseholdTVList" }
+    ]
+  },
+  "migrations": [
+    { "tag": "tv-household-v1", "new_sqlite_classes": ["HouseholdTVList"] }
+  ]
 }
