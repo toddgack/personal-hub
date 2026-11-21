@@ -7,12 +7,14 @@ export class SharedTVList {
   }
 
   async request(path, method = 'GET', body) {
-    const response = await this.fetcher('/api/tv/' + path, {
+    // Native browser fetch must not receive a SharedTVList instance as its receiver.
+    const fetcher = this.fetcher;
+    const response = await fetcher('/api/tv/' + path, {
       method, cache: 'no-store', signal: AbortSignal.timeout(20000),
       ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {})
     });
     let data;
-    try { data = await response.json(); } catch { throw new Error('The shared list could not connect. Try Sync list again.'); }
+    try { data = await response.json(); } catch { throw new Error('Your shared shows could not load. The page will try again automatically.'); }
     if (Array.isArray(data.shows) && Number.isSafeInteger(data.version) && data.version >= this.version) {
       this.rows = new Map(data.shows.map(row => [row.id, row]));
       this.version = data.version;
@@ -38,7 +40,7 @@ export class SharedTVList {
   }
 
   async change(item, removed = false) {
-    if (!this.ready) throw new Error('Sync the shared list before making changes.');
+    if (!this.ready) throw new Error('Your shared shows are still loading. Please try adding the show again in a moment.');
     return this.request('shows/' + item.show.id, removed ? 'DELETE' : 'PUT', {
       name: item.show.name, archived: Boolean(item.archived),
       revision: this.rows.get(item.show.id)?.revision || 0

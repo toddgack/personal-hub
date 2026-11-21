@@ -77,7 +77,7 @@ export default {
       const id = env.TV_LIST.idFromName('household');
       return await env.TV_LIST.get(id).fetch(request);
     } catch {
-      return json({ error: 'The shared list is temporarily unavailable. Your saved schedules are still available. Try Sync list again.' }, 503);
+      return json({ error: 'The shared list is temporarily unavailable. The page will try again automatically.' }, 503);
     }
   }
 };

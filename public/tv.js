@@ -1,5 +1,5 @@
 import { ZONE, DAY, localDay, addDays, weekStart, timed, episodeDay, episodeTime, episodeCode, seasonSummary, showState, releaseGaps, calendarText } from './tv-core.js';
-import { SharedTVList } from './tv-shared.js';
+import { SharedTVList } from './tv-shared.js?v=2';
 
 const get = id => document.getElementById(id);
 const prefix = 'personal-hub.tv.show.';
@@ -16,7 +16,7 @@ let queue = Promise.resolve();
 let lastRequest = 0;
 let storageAvailable = true;
 const shared = new SharedTVList();
-let syncing = false;
+let sharedTask = null;
 let connected = false;
 let syncFailed = false;
 
@@ -103,11 +103,14 @@ function applySharedList() {
   if (detailId != null && get('show-dialog').open) renderDetail(false);
 }
 
-async function syncList(manual = false) {
-  if (syncing) return;
-  syncing = true;
-  get('sync').disabled = true;
-  get('sync-state').textContent = connected ? 'Syncing household list…' : 'Connecting household list…';
+function syncList() {
+  if (sharedTask) return sharedTask;
+  sharedTask = loadSharedList().finally(() => { sharedTask = null; });
+  return sharedTask;
+}
+
+async function loadSharedList() {
+  if (!connected) get('sync-state').textContent = 'Loading your shared shows…';
   try {
     const previousVersion = shared.version;
     const firstConnection = !connected;
@@ -120,18 +123,14 @@ async function syncList(manual = false) {
       tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
       render();
     }
-    get('sync-state').textContent = 'Household list synced · shared across devices';
-    if (manual || syncFailed) announce('Shared list is up to date.');
+    get('sync-state').textContent = 'Shared household list';
+    if (syncFailed) announce('Your shared shows are loaded.');
     syncFailed = false;
     // Episode details are a local cache. The saved show membership comes from Cloudflare.
     refreshSchedules();
   } catch {
     syncFailed = true;
-    get('sync-state').textContent = 'Shared list offline · saved schedules available';
-    if (manual || !connected) announce('The household list could not sync. Your existing shows are still on this device. Use Sync list to retry.');
-  } finally {
-    syncing = false;
-    get('sync').disabled = false;
+    get('sync-state').textContent = 'Shared shows unavailable · retrying automatically';
   }
 }
 
@@ -220,7 +219,8 @@ async function addShow(id) {
   renderSearch();
   get('search-status').textContent = 'Getting episodes and season dates…';
   try {
-    if (!connected) throw new Error('Use Sync list to connect the household list before adding a show.');
+    if (!connected) await syncList();
+    if (!connected) throw new Error('Your shared shows could not connect. The page is retrying automatically. Please try adding the show again in a moment.');
     const item = await fetchShow(id);
     await shared.change(item);
     save(item);
@@ -528,7 +528,6 @@ get('this-week').addEventListener('click', () => { displayedWeek = weekStart(loc
 window.addEventListener('storage', event => {
   if (!event.key || event.key.startsWith(prefix)) syncList();
 });
-get('sync').addEventListener('click', () => syncList(true));
 loadLibrary();
 if (library.size && ![...library.values()].some(item => showState(item).group === 'Active')) {
   tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
