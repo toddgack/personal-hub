@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#170c22">
+  <meta name="description" content="Your shows, upcoming episodes, and release breaks in one personal TV guide.">
+  <title>TV Guide · Personal Hub</title>
+  <link rel="stylesheet" href="/app-theme.css">
+  <link rel="stylesheet" href="/tv.css">
+  <script type="module" src="/tv.js"></script>
+</head>
+<body class="hub-app tv-page">
+  <div class="swirl" aria-hidden="true"></div>
+  <main>
+    <a class="home" href="/">Personal Hub</a>
+    <header class="page-header">
+      <span class="mark" aria-hidden="true">TV</span>
+      <div><p class="eyebrow">Your personal lineup</p><h1>TV Guide</h1></div>
+      <button id="open-search" class="primary">Add a show</button>
+    </header>
+
+    <section class="hero panel" aria-labelledby="next-heading">
+      <div>
+        <p class="eyebrow" id="next-heading">Next on your lineup</p>
+        <h2 id="next-title">Something to look forward to.</h2>
+        <p id="next-detail">Find your shows and keep their release dates together.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="next-show" hidden>Episode schedule</button>
+        <button id="download" disabled>Download calendar</button>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <p id="updated" class="muted small">Your list is saved in this browser.</p>
+      <button id="refresh" class="quiet" disabled>Refresh schedules</button>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
+
+    <nav class="tabs" aria-label="Show collections">
+      <button data-tab="Active" aria-pressed="true">Active <span id="active-count">0</span></button>
+      <button data-tab="Upcoming" aria-pressed="false">Upcoming <span id="upcoming-count">0</span></button>
+      <button data-tab="Past" aria-pressed="false">Past <span id="past-count">0</span></button>
+    </nav>
+    <div class="collection-heading">
+      <div><h2 id="collection-title">Active shows</h2><p class="muted small" id="collection-note">Seasons releasing now, including breaks.</p></div>
+      <label class="sr-only" for="filter">Filter saved shows</label>
+      <input id="filter" type="search" placeholder="Filter your shows" autocomplete="off">
+    </div>
+    <div id="shows" class="show-grid"></div>
+
+    <section class="schedule-section" aria-labelledby="schedule-heading">
+      <div class="schedule-heading">
+        <div><p class="eyebrow" id="week-label"></p><h2 id="schedule-heading">The week ahead</h2></div>
+        <div class="week-buttons">
+          <button id="previous-week" aria-label="Previous week">Previous</button>
+          <button id="this-week">This week</button>
+          <button id="next-week" aria-label="Next week">Next</button>
+        </div>
+      </div>
+      <div id="week-days" class="week-days"></div>
+      <div id="week-notes"></div>
+    </section>
+
+    <footer>
+      <p>Times in Phoenix · America/Phoenix. Broadcast availability may vary locally.</p>
+      <p>Schedules from <a href="https://www.tvmaze.com" target="_blank" rel="noopener">TVmaze</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA</a>. Checked daily when you open the guide, with manual refresh anytime.</p>
+      <p>Your list stays in this browser. Calendar downloads are snapshots of announced episodes.</p>
+    </footer>
+    <noscript>Enable JavaScript to search shows and load episode schedules.</noscript>
+  </main>
+
+  <dialog id="search-dialog" aria-labelledby="search-title">
+    <div class="dialog-heading"><h2 id="search-title">Find your next show</h2><button data-close="search-dialog" class="quiet">Close</button></div>
+    <form id="search-form" role="search">
+      <label for="query">Show title</label>
+      <div class="search-field"><input id="query" type="search" required minlength="2" maxlength="120" placeholder="Only Murders in the Building" autocomplete="off"><button class="primary">Search</button></div>
+    </form>
+    <p id="search-status" class="muted small" role="status" aria-live="polite">Search by title, then choose the matching show.</p>
+    <button id="example" class="example">Find Only Murders in the Building</button>
+    <div id="search-results"></div>
+  </dialog>
+
+  <dialog id="show-dialog" aria-labelledby="show-title">
+    <div class="dialog-heading"><h2 id="show-title"></h2><button data-close="show-dialog" class="quiet">Close</button></div>
+    <div id="show-meta" class="muted"></div>
+    <div class="detail-controls">
+      <label for="season">Season<select id="season"></select></label>
+      <button id="season-download">Download season calendar</button>
+    </div>
+    <div id="season-summary" class="season-summary"></div>
+    <div id="gaps"></div>
+    <ol id="episodes" class="episodes"></ol>
+    <div class="detail-footer">
+      <a id="source-link" target="_blank" rel="noopener">Full details on TVmaze</a>
+      <div><button id="archive-show">Move to Past</button><button id="remove-show" class="quiet">Remove from my guide</button></div>
+    </div>
+  </dialog>
+</body>
+</html>
