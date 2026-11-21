@@ -4,6 +4,8 @@ export class SharedTVList {
     this.rows = new Map();
     this.ready = false;
     this.version = -1;
+    this.watchSeasons = [];
+    this.watched = [];
   }
 
   async request(path, method = 'GET', body) {
@@ -17,6 +19,8 @@ export class SharedTVList {
     try { data = await response.json(); } catch { throw new Error('Your shared shows could not load. The page will try again automatically.'); }
     if (Array.isArray(data.shows) && Number.isSafeInteger(data.version) && data.version >= this.version) {
       this.rows = new Map(data.shows.map(row => [row.id, row]));
+      this.watchSeasons = data.watchSeasons || [];
+      this.watched = data.watched || [];
       this.version = data.version;
       this.ready = true;
     }
@@ -45,5 +49,16 @@ export class SharedTVList {
       name: item.show.name, archived: Boolean(item.archived),
       revision: this.rows.get(item.show.id)?.revision || 0
     });
+  }
+
+  async season(showId, season, queued, mode) {
+    if (!this.ready) throw new Error('Your shared shows are still loading. Try again in a moment.');
+    const current = this.watchSeasons.find(row => row.showId === showId && row.season === season);
+    return this.request('season', 'POST', { showId, season, queued, mode, revision: current?.revision || 0 });
+  }
+
+  async watch(showId, season, episodes, watched) {
+    if (!this.ready) throw new Error('Your shared shows are still loading. Try again in a moment.');
+    return this.request('watch', 'POST', { showId, season, episodes, watched });
   }
 }

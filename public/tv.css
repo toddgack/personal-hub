@@ -40,6 +40,18 @@ label { display: grid; gap: .35rem; font-size: .9rem; font-weight: 650; }
 .tabs span { margin-left: .25rem; opacity: .8; font-weight: 450; }
 .collection-heading, .schedule-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.2rem 0 .85rem; }
 .collection-heading input { max-width: 16rem; background: #21142bdd; }
+.collection-heading > div { flex: 1; }
+#release-filter-label { flex: 0 1 11rem; min-width: 0; }
+.watch-controls { display: flex; align-items: end; flex-wrap: wrap; gap: .6rem; padding: 1rem 0; border-top: 1px solid var(--line); }
+.watch-controls label { flex: 1 1 12rem; }
+.watch-controls button { font-size: .875rem; }
+#watch-progress { flex: 1 1 100%; }
+.watch-toggle { margin-top: .45rem; font-size: .875rem; min-height: 2.5rem; padding: .4rem .6rem; }
+.watch-toggle[aria-pressed="true"] { background: #6F2DA855; border-color: #b880df88; }
+.watch-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: auto; padding-top: .35rem; }
+.watch-actions button { font-size: .875rem; min-height: 2.5rem; padding: .4rem .6rem; }
+.watch-meter { height: .3rem; width: 100%; accent-color: #bd88e8; }
+.watched-episode h3 { color: #cdb8d6; }
 .collection-heading p { margin-top: .25rem; }
 .show-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .8rem; }
 .show-card { border: 1px solid var(--line); border-radius: 1rem; background: #1b1124ef; overflow: hidden; display: grid; grid-template-columns: 5.5rem minmax(0,1fr); }
@@ -119,6 +131,9 @@ dialog::backdrop { background: #0e071bd9; backdrop-filter: blur(5px); }
   .show-grid { grid-template-columns: 1fr; }
   .collection-heading { align-items: stretch; flex-direction: column; gap: .65rem; }
   .collection-heading input { max-width: none; }
+  #release-filter-label { flex: auto; }
+  .watch-controls { align-items: stretch; }
+  .watch-controls button { flex: 1 1 10rem; }
   .schedule-heading { flex-direction: column; align-items: stretch; }
   .week-buttons button { flex: 1; }
   .schedule-controls { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.35fr); gap: .6rem; }

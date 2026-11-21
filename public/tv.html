@@ -8,7 +8,7 @@
   <title>TV Guide · Personal Hub</title>
   <link rel="stylesheet" href="/app-theme.css">
   <link rel="stylesheet" href="/tv.css">
-  <script type="module" src="/tv.js?v=schedule-range-1"></script>
+  <script type="module" src="/tv.js?v=watch-queue-1"></script>
 </head>
 <body class="hub-app tv-page">
   <div class="swirl" aria-hidden="true"></div>
@@ -39,12 +39,18 @@
     <p id="status" role="status" aria-live="polite"></p>
 
     <nav class="tabs" aria-label="Show collections">
-      <button data-tab="Active" aria-pressed="true">Active <span id="active-count">0</span></button>
-      <button data-tab="Upcoming" aria-pressed="false">Upcoming <span id="upcoming-count">0</span></button>
-      <button data-tab="Past" aria-pressed="false">Past <span id="past-count">0</span></button>
+      <button data-tab="Queue" aria-pressed="true">Queue <span id="queue-count">0</span></button>
+      <button data-tab="Watched" aria-pressed="false">Watched <span id="watched-count">0</span></button>
+      <button data-tab="Shows" aria-pressed="false">All shows <span id="shows-count">0</span></button>
     </nav>
     <div class="collection-heading">
-      <div><h2 id="collection-title">Active shows</h2><p class="muted small" id="collection-note">Seasons releasing now, including breaks.</p></div>
+      <div><h2 id="collection-title">Your queue</h2><p class="muted small" id="collection-note">Seasons you want to watch, at your own pace.</p></div>
+      <label id="release-filter-label" hidden>Release status<select id="release-filter">
+        <option value="All">All statuses</option>
+        <option value="Active">Active</option>
+        <option value="Upcoming">Upcoming</option>
+        <option value="Past">Past / paused</option>
+      </select></label>
       <label class="sr-only" for="filter">Filter saved shows</label>
       <input id="filter" type="search" placeholder="Filter your shows" autocomplete="off">
     </div>
@@ -101,12 +107,21 @@
       <label for="season">Season<select id="season"></select></label>
       <button id="season-download">Download season calendar</button>
     </div>
+    <section class="watch-controls" aria-label="Season watch preferences">
+      <label>Watch style<select id="watch-mode">
+        <option value="release">Watch as released</option>
+        <option value="binge">Save to binge</option>
+      </select></label>
+      <button id="queue-season">Add season to queue</button>
+      <button id="watch-season">Mark released episodes watched</button>
+      <p id="watch-progress" class="small muted"></p>
+    </section>
     <div id="season-summary" class="season-summary"></div>
     <div id="gaps"></div>
     <ol id="episodes" class="episodes"></ol>
     <div class="detail-footer">
       <a id="source-link" target="_blank" rel="noopener">Full details on TVmaze</a>
-      <div><button id="archive-show">Move to Past</button><button id="remove-show" class="quiet">Remove from my guide</button></div>
+      <div><button id="archive-show">Pause release tracking</button><button id="remove-show" class="quiet">Remove from my guide</button></div>
     </div>
   </dialog>
 </body>

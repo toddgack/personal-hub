@@ -1,12 +1,12 @@
-import { ZONE, DAY, localDay, addDays, dayDifference, weekStart, timed, episodeDay, episodeTime, episodeCode, seasonSummary, showState, releaseGaps, calendarText } from './tv-core.js';
-import { SharedTVList } from './tv-shared.js?v=2';
+import { ZONE, DAY, localDay, addDays, dayDifference, weekStart, timed, released, episodeDay, episodeTime, episodeCode, seasonSummary, seasonProgress, queuedSeasons, defaultSeason, showState, releaseGaps, calendarText } from './tv-core.js?v=watch-1';
+import { SharedTVList } from './tv-shared.js?v=watch-1';
 
 const get = id => document.getElementById(id);
 const prefix = 'personal-hub.tv.show.';
 const library = new Map();
 const pending = new Set();
 const failures = new Set();
-let tab = 'Active';
+let tab = 'Queue';
 let displayedWeek = weekStart(localDay());
 let scheduleView = 'week';
 let rangeEnd = addDays(displayedWeek, 6);
@@ -94,7 +94,10 @@ function applySharedList() {
       show: { id: row.id, name: row.name, status: 'Unknown' },
       episodes: [], seasons: [], checked: 0
     };
-    save({ ...item, archived: row.archived });
+    save({ ...item, archived: row.archived,
+      watchSeasons: shared.watchSeasons.filter(value => value.showId === row.id),
+      watched: shared.watched.filter(value => value.showId === row.id)
+    });
   }
   if (detailId != null && !library.has(detailId)) {
     get('show-dialog').close();
@@ -117,13 +120,8 @@ async function loadSharedList() {
     const firstConnection = !connected;
     if (connected) await shared.pull();
     else await shared.connect([...library.values()]);
-    const wasEmpty = library.size === 0;
     connected = true;
     if (firstConnection || shared.version !== previousVersion) applySharedList();
-    if (wasEmpty && library.size && ![...library.values()].some(item => showState(item).group === tab)) {
-      tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
-      render();
-    }
     get('sync-state').textContent = 'Shared household list';
     if (syncFailed) announce('Your shared shows are loaded.');
     syncFailed = false;
@@ -226,7 +224,7 @@ async function addShow(id) {
     await shared.change(item);
     save(item);
     applySharedList();
-    tab = showState(item).group;
+    tab = 'Queue';
     render();
     get('search-status').textContent = item.show.name + ' added to the household guide.';
   } catch (error) {
@@ -251,8 +249,8 @@ async function refreshSchedules(force = false) {
     try {
       const updated = await fetchShow(previous.show.id);
       if (!library.has(previous.show.id) || (connected && !shared.members().some(row => row.id === previous.show.id))) continue;
-      updated.archived = library.get(previous.show.id).archived;
-      save(updated);
+      const cached = library.get(previous.show.id);
+      save({ ...updated, archived: cached.archived, watchSeasons: cached.watchSeasons, watched: cached.watched });
       failures.delete(previous.show.id);
     } catch {
       failed++;
@@ -295,7 +293,7 @@ function renderCard(item) {
   const state = showState(item);
   const card = node('article', 'show-card');
   const body = node('div', 'card-body');
-  body.append(node('p', 'card-meta', channel(item.show)), button(item.show.name, 'detail', item.show.id, 'show-name'), node('span', 'tag' + (state.label === 'Awaiting dates' ? ' warm' : ''), item.checked ? state.label : 'Loading schedule'));
+  body.append(node('p', 'card-meta', channel(item.show)), button(item.show.name, 'detail', item.show.id, 'show-name'), node('span', 'tag' + (state.label === 'Awaiting dates' ? ' warm' : ''), item.checked ? item.archived ? 'Release tracking paused' : state.label : 'Loading schedule'));
   if (state.next) {
     body.append(node('p', 'card-next', episodeCode(state.next) + ' · ' + formatDay(episodeDay(state.next))));
   } else {
@@ -310,31 +308,92 @@ function renderCard(item) {
   return card;
 }
 
+function seasonButton(text, action, entry, episodeId) {
+  const control = button(text, action, episodeId ?? entry.item.show.id);
+  control.dataset.showId = entry.item.show.id;
+  control.dataset.season = entry.number;
+  control.disabled = pending.has(entry.item.show.id);
+  return control;
+}
+
+function renderWatchCard(entry, log = false) {
+  const { item, number, progress } = entry;
+  const card = node('article', 'show-card');
+  const body = node('div', 'card-body');
+  const title = seasonButton(item.show.name, 'season-detail', entry);
+  title.className = 'show-name';
+  body.append(node('p', 'card-meta', 'Season ' + number + ' · ' + channel(item.show)), title,
+    node('span', 'tag' + (progress.mode === 'binge' && !progress.finished ? ' warm' : ''), progress.label));
+  body.append(node('p', 'card-meta', (progress.mode === 'binge' ? 'Save to binge' : 'Watch as released') + ' · ' + progress.count + ' / ' + (progress.total || '?') + ' watched'));
+  const meter = node('progress', 'watch-meter');
+  meter.max = progress.total || 1;
+  meter.value = progress.count;
+  meter.setAttribute('aria-label', 'Season ' + number + ' watch progress');
+  body.append(meter);
+  if (log && progress.lastWatched) {
+    body.append(node('p', 'card-next', 'Last watched · ' + formatDay(localDay(progress.lastWatched))));
+  } else if (progress.mode === 'binge' && !progress.finished) {
+    body.append(node('p', 'card-next', progress.final ? 'Full season expected · ' + formatDay(progress.final) : 'Finale date has not been announced.'));
+  } else if (progress.remaining[0]) {
+    const next = progress.remaining[0];
+    body.append(node('p', 'card-next', 'Next to watch · ' + episodeCode(next) + ' · ' + (next.name || 'Title TBA')));
+  } else {
+    const future = progress.episodes.find(episode => !released(episode) && episodeDay(episode));
+    body.append(node('p', 'card-next', future ? 'Next release · ' + formatDay(episodeDay(future)) : 'Waiting for the next announced episode.'));
+  }
+  const actions = node('div', 'watch-actions');
+  actions.append(seasonButton('Season & episodes', 'season-detail', entry));
+  if (!log && progress.remaining[0] && (progress.mode === 'release' || progress.finished)) {
+    actions.append(seasonButton('Mark next watched', 'watch-next', entry, progress.remaining[0].id));
+  }
+  body.append(actions);
+  card.append(poster(item.show), body);
+  return card;
+}
+
 function render() {
   renderHero();
-  const groups = { Active: [], Upcoming: [], Past: [] };
-  [...library.values()].forEach(item => groups[showState(item).group].push(item));
-  for (const group of Object.keys(groups)) {
-    get(group.toLowerCase() + '-count').textContent = groups[group].length;
+  const all = [...library.values()];
+  const queueEntries = all.flatMap(item => queuedSeasons(item));
+  const logEntries = all.flatMap(item => [...new Set((item.watched || []).map(row => row.season))].map(number => ({ item, number, progress: seasonProgress(item, number) })));
+  logEntries.sort((a, b) => b.progress.lastWatched.localeCompare(a.progress.lastWatched));
+  const counts = { Queue: queueEntries.length, Watched: logEntries.length, Shows: all.length };
+  for (const group of Object.keys(counts)) {
+    get(group.toLowerCase() + '-count').textContent = counts[group];
     document.querySelector('[data-tab="' + group + '"]').setAttribute('aria-pressed', String(group === tab));
   }
-  get('collection-title').textContent = tab + ' shows';
+  get('collection-title').textContent = { Queue: 'Your queue', Watched: 'Watched log', Shows: 'All your shows' }[tab];
   get('collection-note').textContent = {
-    Active: 'Seasons releasing now, including breaks.',
-    Upcoming: 'Future premieres and shows awaiting return dates.',
-    Past: 'Ended series and shows you moved here.'
+    Queue: 'Seasons stay here until you finish watching or remove them.',
+    Watched: 'Episodes and seasons you’ve marked watched, most recent first.',
+    Shows: 'Browse every saved show and add any season to your queue.'
   }[tab];
+  get('release-filter-label').hidden = tab !== 'Shows';
   const filter = get('filter').value.trim().toLocaleLowerCase();
-  const shows = groups[tab].filter(item => item.show.name.toLocaleLowerCase().includes(filter));
+  const matches = item => item.show.name.toLocaleLowerCase().includes(filter);
+  const shows = all.filter(item => matches(item) && (get('release-filter').value === 'All' || get('release-filter').value === '' || showState(item).group === get('release-filter').value));
   shows.sort((a, b) => {
     const first = showState(a).next, second = showState(b).next;
     return (episodeDay(first || {}) || '9999').localeCompare(episodeDay(second || {}) || '9999') || a.show.name.localeCompare(b.show.name);
   });
-  if (shows.length) get('shows').replaceChildren(...shows.map(renderCard));
+  const cards = tab === 'Shows' ? shows.map(renderCard) : (tab === 'Queue' ? queueEntries : logEntries).filter(entry => matches(entry.item)).map(entry => renderWatchCard(entry, tab === 'Watched'));
+  if (cards.length) get('shows').replaceChildren(...cards);
   else {
     const empty = node('div', 'empty');
-    empty.append(node('h3', '', !library.size ? 'Your shows belong here.' : filter ? 'No matching shows.' : 'No ' + tab.toLowerCase() + ' shows.'));
-    empty.append(node('p', '', !library.size ? 'Search a title to see premieres, weekly releases and the breaks in between.' : filter ? 'Try another title in this collection.' : 'Shows move automatically as announced seasons start and finish.'));
+    let heading = {
+      Queue: all.some(item => !item.checked) ? 'Loading your queue…' : 'Your queue is clear.',
+      Watched: 'Your watched log starts here.',
+      Shows: 'No shows in this view.'
+    }[tab];
+    let message = tab === 'Watched' ? 'Mark an episode or a season watched to save your progress.' : 'Open a saved show and choose the season you want to watch.';
+    if (!library.size) {
+      heading = 'Your shows belong here.';
+      message = 'Search a title to start your queue and follow its releases.';
+    } else if (filter) {
+      heading = 'No matching shows.';
+      message = 'Try another title in this collection.';
+    }
+    empty.append(node('h3', '', heading), node('p', '', message));
     if (!filter) empty.append(button('Find a show', 'search', '', 'primary'));
     get('shows').replaceChildren(empty);
   }
@@ -426,10 +485,14 @@ function renderWeek() {
   get('week-notes').replaceChildren(...notices);
 }
 
-function openDetail(id) {
+function openDetail(id, season) {
   if (!library.has(id)) return;
   detailId = id;
   renderDetail(true);
+  if (season !== undefined) {
+    get('season').value = String(season);
+    renderSeason();
+  }
   get('show-dialog').showModal();
 }
 
@@ -438,12 +501,11 @@ function renderDetail(resetSeason) {
   get('show-title').textContent = item.show.name;
   get('show-meta').textContent = channel(item.show) + ' · ' + item.show.status + ' · ' + (item.show.schedule?.days?.join(', ') || 'Release days TBA');
   get('source-link').href = item.show.url;
-  get('archive-show').textContent = item.archived ? 'Follow again' : 'Move to Past';
+  get('archive-show').textContent = item.archived ? 'Resume release tracking' : 'Pause release tracking';
   const previous = Number(get('season').value);
   const numbers = [...new Set([...item.seasons.map(value => value.number), ...item.episodes.map(value => value.season)])].sort((a, b) => b - a);
   get('season').replaceChildren(...numbers.map(number => new Option('Season ' + number, number)));
-  const next = showState(item).next;
-  get('season').value = String(!resetSeason && numbers.includes(previous) ? previous : next?.season ?? numbers[0]);
+  get('season').value = String(!resetSeason && numbers.includes(previous) ? previous : defaultSeason(item) ?? numbers[0]);
   renderSeason();
 }
 
@@ -451,6 +513,14 @@ function renderSeason() {
   const item = library.get(detailId);
   const number = Number(get('season').value);
   const summary = seasonSummary(item, number);
+  const progress = seasonProgress(item, number);
+  get('watch-mode').value = progress.mode;
+  get('watch-mode').disabled = pending.has(detailId) || !Number.isInteger(number) || !get('season').value;
+  get('queue-season').textContent = progress.complete ? 'Season watched' : progress.queued ? 'Remove season from queue' : 'Add season to queue';
+  get('queue-season').disabled = pending.has(detailId) || progress.complete || !get('season').value;
+  get('watch-season').textContent = progress.complete ? 'Mark season unwatched' : progress.finished ? 'Mark season watched' : 'Mark released episodes watched';
+  get('watch-season').disabled = pending.has(detailId) || (!progress.complete && !progress.remaining.length);
+  get('watch-progress').textContent = progress.label + ' · ' + progress.count + ' / ' + (progress.total || '?') + ' episodes watched';
   const notes = [
     ['Season starts', summary.first ? formatDay(summary.first) : 'Not announced'],
     ['Season finale', summary.final ? formatDay(summary.final) : 'Not announced']
@@ -472,6 +542,17 @@ function renderSeason() {
     const info = node('div');
     const title = episode.name && episode.name !== 'TBA' ? episode.name : 'Title TBA';
     info.append(node('p', '', episodeCode(episode)), node('h3', '', title));
+    const watched = progress.watchedIds.has(episode.id);
+    const watch = button(watched ? 'Watched · Undo' : released(episode) ? 'Mark watched' : 'Not released', 'episode-watch', episode.id, 'watch-toggle');
+    watch.setAttribute('aria-pressed', String(watched));
+    watch.setAttribute('aria-label', (watched ? 'Mark unwatched ' : 'Mark watched ') + episodeCode(episode));
+    watch.disabled = pending.has(detailId) || (!watched && !released(episode));
+    info.append(watch);
+    if (watched) {
+      row.className = 'watched-episode';
+      const record = (item.watched || []).find(value => value.episodeId === episode.id);
+      info.append(node('p', 'card-meta', 'Watched · ' + formatDay(localDay(record.watchedAt))));
+    }
     const when = node('div', 'episode-date');
     const day = episodeDay(episode);
     when.append(node('div', '', formatDay(day)), node('p', '', episodeTime(episode)));
@@ -479,6 +560,26 @@ function renderSeason() {
     row.append(info, when);
     return row;
   }));
+}
+
+async function saveWatchChange(id, action) {
+  if (pending.has(id)) return;
+  pending.add(id);
+  render();
+  if (detailId === id && get('show-dialog').open) renderDetail(false);
+  try {
+    if (!connected) await syncList();
+    await action();
+    applySharedList();
+    announce('Watch progress saved for your household.');
+  } catch (error) {
+    if (connected) applySharedList();
+    announce(error.message || 'Watch progress could not save. Try again.');
+  } finally {
+    pending.delete(id);
+    render();
+    if (detailId === id && get('show-dialog').open) renderDetail(false);
+  }
 }
 
 function download(items, name) {
@@ -514,6 +615,19 @@ document.addEventListener('click', event => {
   if (action.dataset.action === 'search') get('search-dialog').showModal();
   if (action.dataset.action === 'add') addShow(id);
   if (action.dataset.action === 'detail') openDetail(id);
+  if (action.dataset.action === 'season-detail') openDetail(id, Number(action.dataset.season));
+  if (action.dataset.action === 'watch-next') {
+    const showId = Number(action.dataset.showId);
+    saveWatchChange(showId, () => shared.watch(showId, Number(action.dataset.season), [id], true));
+  }
+  if (action.dataset.action === 'episode-watch') {
+    const item = library.get(detailId);
+    const episode = item.episodes.find(value => value.id === id);
+    if (!episode) return;
+    const watched = (item.watched || []).some(value => value.episodeId === id);
+    if (!watched && !released(episode)) return;
+    saveWatchChange(item.show.id, () => shared.watch(item.show.id, episode.season, [id], !watched));
+  }
   if (action.dataset.action === 'episode-calendar') {
     const item = library.get(detailId);
     download([{ item, episodes: item.episodes.filter(episode => episode.id === id) }], 'tv-episode-' + id);
@@ -523,10 +637,26 @@ get('open-search').addEventListener('click', () => get('search-dialog').showModa
 get('search-form').addEventListener('submit', event => { event.preventDefault(); search(); });
 get('example').addEventListener('click', () => { get('query').value = 'Only Murders in the Building'; search(); });
 get('filter').addEventListener('input', render);
+get('release-filter').addEventListener('change', render);
 get('refresh').addEventListener('click', () => refreshSchedules(true));
 get('download').addEventListener('click', upcomingCalendar);
 get('next-show').addEventListener('click', () => openDetail(Number(get('next-show').dataset.id)));
 get('season').addEventListener('change', renderSeason);
+get('watch-mode').addEventListener('change', () => {
+  const id = detailId, season = Number(get('season').value), mode = get('watch-mode').value;
+  saveWatchChange(id, () => shared.season(id, season, true, mode));
+});
+get('queue-season').addEventListener('click', () => {
+  const item = library.get(detailId), season = Number(get('season').value);
+  const progress = seasonProgress(item, season);
+  saveWatchChange(item.show.id, () => shared.season(item.show.id, season, !progress.queued, progress.mode));
+});
+get('watch-season').addEventListener('click', () => {
+  const item = library.get(detailId), season = Number(get('season').value);
+  const progress = seasonProgress(item, season);
+  const episodes = (progress.complete ? progress.available : progress.remaining).map(episode => episode.id);
+  if (episodes.length) saveWatchChange(item.show.id, () => shared.watch(item.show.id, season, episodes, !progress.complete));
+});
 get('season-download').addEventListener('click', () => {
   const item = library.get(detailId);
   const number = Number(get('season').value);
@@ -541,7 +671,7 @@ get('archive-show').addEventListener('click', async () => {
   try {
     await shared.change({ ...item, archived: !item.archived });
     applySharedList();
-    tab = showState(library.get(id)).group;
+    tab = 'Shows';
     render();
     announce(item.show.name + ' updated for both devices.');
   } catch (error) {
@@ -611,9 +741,6 @@ window.addEventListener('storage', event => {
 });
 loadLibrary();
 updateScheduleControls();
-if (library.size && ![...library.values()].some(item => showState(item).group === 'Active')) {
-  tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
-}
 render();
 syncList();
 let lastToday = localDay();

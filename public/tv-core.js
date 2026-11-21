@@ -79,6 +79,53 @@ export function showState(item, today = localDay()) {
   return { group: 'Upcoming', label: 'Awaiting dates', next: null };
 }
 
+export function released(episode, today = localDay(), now = Date.now()) {
+  const day = episodeDay(episode);
+  return Boolean(day && day <= today && (!timed(episode) || Date.parse(episode.airstamp) <= now));
+}
+
+export function defaultSeason(item, today = localDay()) {
+  const numbers = [...new Set([...item.seasons.map(season => season.number), ...item.episodes.map(episode => episode.season)])].sort((a, b) => b - a);
+  return numbers.find(number => {
+    const first = seasonSummary(item, number).first;
+    return first && first <= today;
+  }) ?? numbers.at(-1);
+}
+
+export function seasonProgress(item, number, today = localDay(), now = Date.now()) {
+  const summary = seasonSummary(item, number);
+  const preference = (item.watchSeasons || []).find(row => row.season === number);
+  const implicit = !(item.watchSeasons || []).length && !item.archived && number === defaultSeason(item, today);
+  const queued = preference ? preference.queued : implicit;
+  const mode = preference?.mode || 'release';
+  const records = (item.watched || []).filter(row => row.season === number);
+  const watchedIds = new Set(records.map(row => row.episodeId));
+  const regular = summary.episodes.filter(episode => episode.number != null);
+  const available = regular.filter(episode => released(episode, today, now));
+  const remaining = available.filter(episode => !watchedIds.has(episode.id));
+  const total = summary.season?.episodeOrder || regular.length;
+  const laterSeasonStarted = item.seasons.some(season => season.number > number && season.premiereDate && season.premiereDate <= today);
+  const seasonEnded = (summary.final && summary.final <= today) || item.show.status === 'Ended' || laterSeasonStarted;
+  const finished = Boolean(seasonEnded && regular.length > 0 &&
+    regular.length >= total && regular.every(episode => released(episode, today, now)));
+  const complete = finished && regular.every(episode => watchedIds.has(episode.id));
+  const count = regular.filter(episode => watchedIds.has(episode.id)).length;
+  const lastWatched = records.map(row => row.watchedAt).sort().at(-1) || null;
+  let label = 'Awaiting release';
+  if (complete) label = 'Season watched';
+  else if (mode === 'binge') label = finished ? 'Ready to binge' : 'Waiting for the finale';
+  else if (remaining.length) label = count ? 'Continue watching' : 'Ready to watch';
+  else if (count) label = 'Caught up';
+  return { ...summary, queued, mode, watchedIds, available, remaining, total, count, finished, complete, lastWatched, label };
+}
+
+export function queuedSeasons(item, today = localDay(), now = Date.now()) {
+  const preferences = item.watchSeasons || [];
+  const numbers = preferences.length ? preferences.filter(row => row.queued).map(row => row.season) :
+    item.archived ? [] : [defaultSeason(item, today)].filter(number => number !== undefined);
+  return numbers.map(number => ({ item, number, progress: seasonProgress(item, number, today, now) })).filter(entry => !entry.progress.complete);
+}
+
 export function releaseGaps(item) {
   const gaps = [];
   const regular = sortedEpisodes(item.episodes.filter(value => value.number != null && episodeDay(value)));
