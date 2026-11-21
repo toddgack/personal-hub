@@ -1,4 +1,4 @@
-import { ZONE, DAY, localDay, addDays, weekStart, timed, episodeDay, episodeTime, episodeCode, seasonSummary, showState, releaseGaps, calendarText } from './tv-core.js';
+import { ZONE, DAY, localDay, addDays, dayDifference, weekStart, timed, episodeDay, episodeTime, episodeCode, seasonSummary, showState, releaseGaps, calendarText } from './tv-core.js';
 import { SharedTVList } from './tv-shared.js?v=2';
 
 const get = id => document.getElementById(id);
@@ -8,6 +8,8 @@ const pending = new Set();
 const failures = new Set();
 let tab = 'Active';
 let displayedWeek = weekStart(localDay());
+let scheduleView = 'week';
+let rangeEnd = addDays(displayedWeek, 6);
 let detailId = null;
 let searchResults = [];
 let searchVersion = 0;
@@ -339,20 +341,62 @@ function render() {
   renderWeek();
 }
 
+function scheduleEnd() {
+  if (scheduleView === 'range') return rangeEnd;
+  if (scheduleView === 'week') return addDays(displayedWeek, 6);
+  const date = new Date(displayedWeek + 'T12:00:00Z');
+  date.setUTCMonth(date.getUTCMonth() + 1);
+  return addDays(date.toISOString().slice(0, 10), -1);
+}
+
+function updateScheduleControls() {
+  const month = scheduleView === 'month';
+  const range = scheduleView === 'range';
+  get('schedule-view').value = scheduleView;
+  get('jump-date-field').hidden = month;
+  get('jump-date').disabled = month;
+  get('jump-month-field').hidden = !month;
+  get('jump-month').disabled = !month;
+  get('jump-end-field').hidden = !range;
+  get('jump-end').disabled = !range;
+  get('jump-date-label').textContent = range ? 'From' : 'Go to date';
+  get('jump-date').value = displayedWeek;
+  get('jump-month').value = displayedWeek.slice(0, 7);
+  get('jump-end').value = rangeEnd;
+  get('schedule-error').textContent = '';
+}
+
+function changePeriod(direction) {
+  if (scheduleView === 'month') {
+    const date = new Date(displayedWeek + 'T12:00:00Z');
+    date.setUTCMonth(date.getUTCMonth() + direction);
+    displayedWeek = date.toISOString().slice(0, 10);
+  } else {
+    const days = scheduleView === 'week' ? 7 : dayDifference(displayedWeek, rangeEnd) + 1;
+    displayedWeek = addDays(displayedWeek, direction * days);
+    if (scheduleView === 'range') rangeEnd = addDays(rangeEnd, direction * days);
+  }
+  updateScheduleControls();
+  renderWeek();
+}
+
 function renderWeek() {
   const today = localDay();
-  const end = addDays(displayedWeek, 6);
+  const end = scheduleEnd();
   const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
   get('week-label').textContent = formatter.formatRange(new Date(displayedWeek + 'T12:00:00Z'), new Date(end + 'T12:00:00Z'));
-  get('schedule-heading').textContent = displayedWeek === weekStart(today) ? 'This week’s releases' : 'Weekly releases';
-  get('this-week').disabled = displayedWeek === weekStart(today);
+  get('schedule-heading').textContent = scheduleView === 'month' ? 'Monthly releases' : scheduleView === 'range' ? 'Releases in your date range' : displayedWeek === weekStart(today) ? 'This week’s releases' : 'Weekly releases';
+  const currentStart = scheduleView === 'week' ? weekStart(today) : scheduleView === 'month' ? today.slice(0, 7) + '-01' : today;
+  get('this-week').disabled = displayedWeek === currentStart;
+  get('this-week').textContent = scheduleView === 'week' ? 'This week' : scheduleView === 'month' ? 'This month' : 'Today';
+  get('previous-week').setAttribute('aria-label', 'Previous ' + scheduleView);
+  get('next-week').setAttribute('aria-label', 'Next ' + scheduleView);
   const entries = [...library.values()].filter(item => !item.archived).flatMap(item =>
     item.episodes.map(episode => ({ item, episode }))
   );
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const day = addDays(displayedWeek, index);
+  const releaseDates = [...new Set(entries.map(entry => episodeDay(entry.episode)))].filter(day => day && day >= displayedWeek && day <= end).sort();
+  const days = releaseDates.map(day => {
     const releases = entries.filter(entry => episodeDay(entry.episode) === day).sort((a, b) => (a.episode.airstamp || '').localeCompare(b.episode.airstamp || ''));
-    if (!releases.length) return null;
     const panel = node('section', 'day' + (day === today ? ' today' : ''));
     const title = node('h3');
     const date = node('time', '', formatDay(day));
@@ -367,8 +411,9 @@ function renderWeek() {
     }
     panel.append(list);
     return panel;
-  }).filter(Boolean);
-  get('week-days').replaceChildren(...(days.length ? days : [node('p', 'week-empty muted', 'No releases scheduled this week.')]));
+  });
+  const emptyMessage = scheduleView === 'week' ? 'No releases scheduled this week.' : scheduleView === 'month' ? 'No releases scheduled this month.' : 'No releases scheduled in this date range.';
+  get('week-days').replaceChildren(...(days.length ? days : [node('p', 'week-empty muted', emptyMessage)]));
   const notices = [];
   for (const item of library.values()) {
     if (item.archived) continue;
@@ -525,13 +570,47 @@ get('remove-show').addEventListener('click', async () => {
     get('remove-show').disabled = false;
   }
 });
-get('previous-week').addEventListener('click', () => { displayedWeek = addDays(displayedWeek, -7); renderWeek(); });
-get('next-week').addEventListener('click', () => { displayedWeek = addDays(displayedWeek, 7); renderWeek(); });
-get('this-week').addEventListener('click', () => { displayedWeek = weekStart(localDay()); renderWeek(); });
+get('previous-week').addEventListener('click', () => changePeriod(-1));
+get('next-week').addEventListener('click', () => changePeriod(1));
+get('this-week').addEventListener('click', () => {
+  const today = localDay();
+  const days = dayDifference(displayedWeek, rangeEnd);
+  displayedWeek = scheduleView === 'week' ? weekStart(today) : scheduleView === 'month' ? today.slice(0, 7) + '-01' : today;
+  if (scheduleView === 'range') rangeEnd = addDays(displayedWeek, days);
+  updateScheduleControls();
+  renderWeek();
+});
+get('schedule-view').addEventListener('change', () => {
+  const end = scheduleEnd();
+  scheduleView = get('schedule-view').value;
+  if (scheduleView === 'month') displayedWeek = displayedWeek.slice(0, 7) + '-01';
+  if (scheduleView === 'week') displayedWeek = weekStart(displayedWeek);
+  if (scheduleView === 'range') rangeEnd = end;
+  updateScheduleControls();
+  renderWeek();
+});
+get('schedule-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const start = scheduleView === 'month' ? get('jump-month').value + '-01' : get('jump-date').value;
+  const end = get('jump-end').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !Number.isFinite(Date.parse(start + 'T12:00:00Z'))) {
+    get('schedule-error').textContent = 'Choose a valid date or month.';
+    return;
+  }
+  if (scheduleView === 'range' && (!/^\d{4}-\d{2}-\d{2}$/.test(end) || !Number.isFinite(Date.parse(end + 'T12:00:00Z')) || end < start)) {
+    get('schedule-error').textContent = 'Choose an end date on or after the start date.';
+    return;
+  }
+  displayedWeek = scheduleView === 'week' ? weekStart(start) : start;
+  if (scheduleView === 'range') rangeEnd = end;
+  updateScheduleControls();
+  renderWeek();
+});
 window.addEventListener('storage', event => {
   if (!event.key || event.key.startsWith(prefix)) syncList();
 });
 loadLibrary();
+updateScheduleControls();
 if (library.size && ![...library.values()].some(item => showState(item).group === 'Active')) {
   tab = [...library.values()].some(item => showState(item).group === 'Upcoming') ? 'Upcoming' : 'Past';
 }
@@ -541,7 +620,10 @@ let lastToday = localDay();
 setInterval(() => {
   const today = localDay();
   if (today !== lastToday) {
-    if (displayedWeek === weekStart(lastToday)) displayedWeek = weekStart(today);
+    if (scheduleView === 'week' && displayedWeek === weekStart(lastToday)) {
+      displayedWeek = weekStart(today);
+      updateScheduleControls();
+    }
     lastToday = today;
     render();
   }

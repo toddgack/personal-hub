@@ -8,7 +8,7 @@
   <title>TV Guide · Personal Hub</title>
   <link rel="stylesheet" href="/app-theme.css">
   <link rel="stylesheet" href="/tv.css">
-  <script type="module" src="/tv.js?v=compact-dates-1"></script>
+  <script type="module" src="/tv.js?v=schedule-range-1"></script>
 </head>
 <body class="hub-app tv-page">
   <div class="swirl" aria-hidden="true"></div>
@@ -59,6 +59,18 @@
           <button id="next-week" aria-label="Next week">Next</button>
         </div>
       </div>
+      <form id="schedule-form" class="schedule-controls">
+        <label>View<select id="schedule-view">
+          <option value="week">Week</option>
+          <option value="month">Month</option>
+          <option value="range">Date range</option>
+        </select></label>
+        <label id="jump-date-field"><span id="jump-date-label">Go to date</span><input id="jump-date" type="date" required></label>
+        <label id="jump-month-field" hidden>Go to month<input id="jump-month" type="month" placeholder="YYYY-MM" pattern="[0-9]{4}-[0-9]{2}" required disabled></label>
+        <label id="jump-end-field" hidden>Through<input id="jump-end" type="date" required disabled></label>
+        <button class="primary">Go</button>
+      </form>
+      <p id="schedule-error" class="small" role="status"></p>
       <div id="week-days" class="week-days"></div>
       <div id="week-notes"></div>
     </section>
