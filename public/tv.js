@@ -35,11 +35,10 @@ function button(text, action, id, className = '') {
   return element;
 }
 
-function formatDay(day, withYear = false) {
+function formatDay(day) {
   if (!day) return 'Date TBA';
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric',
-    ...(withYear ? { year: 'numeric' } : {})
+    timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
   }).format(new Date(day + 'T12:00:00Z'));
 }
 
@@ -287,7 +286,7 @@ function renderHero() {
   }
   const checks = [...library.values()].map(item => item.checked || 0);
   const oldest = checks.length ? Math.min(...checks) : 0;
-  get('updated').textContent = oldest ? 'Oldest schedule check · ' + new Intl.DateTimeFormat('en-US', { timeZone: ZONE, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(oldest)) : library.size ? 'Loading episode schedules…' : 'Add a show to your household list.';
+  get('updated').textContent = oldest ? 'Oldest schedule check · ' + new Intl.DateTimeFormat('en-US', { timeZone: ZONE, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(oldest)) : library.size ? 'Loading episode schedules…' : 'Add a show to your household list.';
 }
 
 function renderCard(item) {
@@ -352,20 +351,24 @@ function renderWeek() {
   );
   const days = Array.from({ length: 7 }, (_, index) => {
     const day = addDays(displayedWeek, index);
-    const panel = node('section', 'day' + (day === today ? ' today' : ''));
-    const title = node('h3', '', new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(new Date(day + 'T12:00:00Z')));
-    title.append(node('b', '', Number(day.slice(-2))));
-    panel.append(title);
     const releases = entries.filter(entry => episodeDay(entry.episode) === day).sort((a, b) => (a.episode.airstamp || '').localeCompare(b.episode.airstamp || ''));
-    if (!releases.length) panel.append(node('p', '', 'No releases listed'));
+    if (!releases.length) return null;
+    const panel = node('section', 'day' + (day === today ? ' today' : ''));
+    const title = node('h3');
+    const date = node('time', '', formatDay(day));
+    date.dateTime = day;
+    title.append(date);
+    panel.append(title);
+    const list = node('div', 'day-releases');
     for (const { item, episode } of releases) {
       const release = button('', 'detail', item.show.id, 'day-episode');
       release.append(node('strong', '', item.show.name), node('span', '', episodeCode(episode) + ' · ' + episodeTime(episode)));
-      panel.append(release);
+      list.append(release);
     }
+    panel.append(list);
     return panel;
-  });
-  get('week-days').replaceChildren(...days);
+  }).filter(Boolean);
+  get('week-days').replaceChildren(...(days.length ? days : [node('p', 'week-empty muted', 'No releases scheduled this week.')]));
   const notices = [];
   for (const item of library.values()) {
     if (item.archived) continue;
@@ -404,8 +407,8 @@ function renderSeason() {
   const number = Number(get('season').value);
   const summary = seasonSummary(item, number);
   const notes = [
-    ['Season starts', summary.first ? formatDay(summary.first, true) : 'Not announced'],
-    ['Season finale', summary.final ? formatDay(summary.final, true) : 'Not announced']
+    ['Season starts', summary.first ? formatDay(summary.first) : 'Not announced'],
+    ['Season finale', summary.final ? formatDay(summary.final) : 'Not announced']
   ];
   get('season-summary').replaceChildren(...notes.map(([label, text]) => {
     const part = node('p');
