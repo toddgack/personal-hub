@@ -17,6 +17,7 @@ export class HouseholdTVList {
     this.sql.exec('INSERT OR IGNORE INTO list_state (id, version) VALUES (1, 0)');
     this.sql.exec("CREATE TABLE IF NOT EXISTS watch_seasons (show_id INTEGER NOT NULL, season INTEGER NOT NULL, queued INTEGER NOT NULL DEFAULT 1, mode TEXT NOT NULL DEFAULT 'release', revision INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (show_id, season))");
     this.sql.exec('CREATE TABLE IF NOT EXISTS watched_episodes (show_id INTEGER NOT NULL, episode_id INTEGER NOT NULL, season INTEGER NOT NULL, watched_at TEXT, PRIMARY KEY (show_id, episode_id))');
+    this.sql.exec('CREATE TABLE IF NOT EXISTS watch_mutations (id TEXT PRIMARY KEY)');
   }
 
   snapshot() {
@@ -61,9 +62,39 @@ export class HouseholdTVList {
     return this.response();
   }
 
+  async watchBatch(request) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid watch update.' }, 400); }
+    const operations = body.operations;
+    if (!Array.isArray(operations) || !operations.length || operations.length > 100 ||
+        !operations.every(change => change && Number.isSafeInteger(change.showId) && change.showId > 0 &&
+          Number.isSafeInteger(change.episodeId) && change.episodeId > 0 &&
+          Number.isInteger(change.season) && change.season >= 0 &&
+          typeof change.watched === 'boolean' && typeof change.mutationId === 'string' &&
+          change.mutationId.length > 0 && change.mutationId.length <= 100)) return json({ error: 'Invalid episode changes.' }, 400);
+    this.storage.transactionSync(() => {
+      for (const change of operations) {
+        if (this.sql.exec('SELECT id FROM watch_mutations WHERE id = ?', change.mutationId).toArray().length) continue;
+        const show = this.sql.exec('SELECT id FROM shows WHERE id = ? AND removed = 0', change.showId).toArray()[0];
+        if (show) {
+          this.sql.exec("INSERT OR IGNORE INTO watch_seasons (show_id, season, queued, mode) VALUES (?, ?, 1, 'release')", change.showId, change.season);
+          if (change.watched) {
+            this.sql.exec('INSERT INTO watched_episodes (show_id, episode_id, season, watched_at) VALUES (?, ?, ?, ?) ON CONFLICT(show_id, episode_id) DO UPDATE SET watched_at=COALESCE(watched_episodes.watched_at, excluded.watched_at)', change.showId, change.episodeId, change.season, new Date().toISOString());
+          } else {
+            this.sql.exec('UPDATE watched_episodes SET watched_at = NULL WHERE show_id = ? AND episode_id = ?', change.showId, change.episodeId);
+          }
+        }
+        this.sql.exec('INSERT INTO watch_mutations (id) VALUES (?)', change.mutationId);
+      }
+      this.sql.exec('UPDATE list_state SET version = version + 1 WHERE id = 1');
+    });
+    return this.response();
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/api/tv/list') return this.response();
+    if (request.method === 'POST' && url.pathname === '/api/tv/watch-batch') return this.watchBatch(request);
     if (request.method === 'POST' && ['/api/tv/season', '/api/tv/watch'].includes(url.pathname)) return this.watchChange(request, url.pathname);
     if (request.method === 'POST' && url.pathname === '/api/tv/migrate') {
       let body;

@@ -13,6 +13,7 @@ export class SharedTVList {
     const fetcher = this.fetcher;
     const response = await fetcher('/api/tv/' + path, {
       method, cache: 'no-store', signal: AbortSignal.timeout(20000),
+      ...(path === 'watch-batch' ? { keepalive: true } : {}),
       ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {})
     });
     let data;
@@ -60,5 +61,10 @@ export class SharedTVList {
   async watch(showId, season, episodes, watched) {
     if (!this.ready) throw new Error('Your shared shows are still loading. Try again in a moment.');
     return this.request('watch', 'POST', { showId, season, episodes, watched });
+  }
+
+  async watchBatch(operations) {
+    if (!this.ready) throw new Error('Your shared shows are still loading.');
+    return this.request('watch-batch', 'POST', { operations });
   }
 }

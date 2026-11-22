@@ -46,6 +46,9 @@ label { display: grid; gap: .35rem; font-size: .9rem; font-weight: 650; }
 .watch-controls label { flex: 1 1 12rem; }
 .watch-controls button { font-size: .875rem; }
 #watch-progress { flex: 1 1 100%; }
+#watch-save-detail { flex: 1 1 100%; }
+#watch-save-status:empty, #watch-save-detail:empty { display: none; }
+.watch-through { margin-left: .35rem; }
 .watch-toggle { margin-top: .45rem; font-size: .875rem; min-height: 2.5rem; padding: .4rem .6rem; }
 .watch-toggle[aria-pressed="true"] { background: #6F2DA855; border-color: #b880df88; }
 .watch-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: auto; padding-top: .35rem; }

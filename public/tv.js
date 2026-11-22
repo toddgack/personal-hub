@@ -1,5 +1,6 @@
 import { ZONE, DAY, localDay, addDays, dayDifference, weekStart, timed, released, episodeDay, episodeTime, episodeCode, seasonSummary, seasonProgress, queuedSeasons, defaultSeason, showState, releaseGaps, calendarText } from './tv-core.js?v=watch-1';
-import { SharedTVList } from './tv-shared.js?v=watch-1';
+import { SharedTVList } from './tv-shared.js?v=fast-1';
+import { WatchSaveQueue } from './tv-watch-queue.js?v=1';
 
 const get = id => document.getElementById(id);
 const prefix = 'personal-hub.tv.show.';
@@ -21,6 +22,10 @@ const shared = new SharedTVList();
 let sharedTask = null;
 let connected = false;
 let syncFailed = false;
+const watchSaves = new WatchSaveQueue(async operations => {
+  if (!connected) await syncList();
+  return shared.watchBatch(operations);
+}, { onChange: updateWatchSaveUI });
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -80,7 +85,7 @@ function save(item) {
   }
 }
 
-function applySharedList() {
+function applySharedList(persist = true) {
   const members = shared.members();
   const ids = new Set(members.map(row => row.id));
   for (const id of library.keys()) {
@@ -94,10 +99,12 @@ function applySharedList() {
       show: { id: row.id, name: row.name, status: 'Unknown' },
       episodes: [], seasons: [], checked: 0
     };
-    save({ ...item, archived: row.archived,
+    const projected = watchSaves.project({ ...item, archived: row.archived,
       watchSeasons: shared.watchSeasons.filter(value => value.showId === row.id),
       watched: shared.watched.filter(value => value.showId === row.id)
     });
+    if (persist) save(projected);
+    else library.set(row.id, projected);
   }
   if (detailId != null && !library.has(detailId)) {
     get('show-dialog').close();
@@ -127,6 +134,7 @@ async function loadSharedList() {
     syncFailed = false;
     // Episode details are a local cache. The saved show membership comes from Cloudflare.
     refreshSchedules();
+    watchSaves.flush();
   } catch {
     syncFailed = true;
     get('sync-state').textContent = 'Shared shows unavailable · retrying automatically';
@@ -548,6 +556,12 @@ function renderSeason() {
     watch.setAttribute('aria-label', (watched ? 'Mark unwatched ' : 'Mark watched ') + episodeCode(episode));
     watch.disabled = pending.has(detailId) || (!watched && !released(episode));
     info.append(watch);
+    const earlierUnwatched = progress.available.some(value => value.number != null && value.number <= episode.number && !progress.watchedIds.has(value.id));
+    if (episode.number != null && released(episode) && earlierUnwatched) {
+      const through = button('Watch through E' + episode.number, 'watch-through', episode.id, 'watch-toggle watch-through');
+      through.disabled = pending.has(detailId);
+      info.append(through);
+    }
     if (watched) {
       row.className = 'watched-episode';
       const record = (item.watched || []).find(value => value.episodeId === episode.id);
@@ -560,6 +574,24 @@ function renderSeason() {
     row.append(info, when);
     return row;
   }));
+}
+
+function updateWatchSaveUI(reason) {
+  if (connected && shared.ready) applySharedList(reason === 'saved');
+  else {
+    for (const [id, item] of library) library.set(id, watchSaves.project(item));
+    render();
+    if (detailId != null && get('show-dialog').open) renderDetail(false);
+  }
+  const count = watchSaves.entries.size;
+  const message = count ? watchSaves.error || 'Saving ' + count + (count === 1 ? ' episode change…' : ' episode changes…') : reason === 'saved' ? 'Watch progress saved for your household.' : '';
+  get('watch-save-status').textContent = message;
+  get('watch-save-detail').textContent = message;
+}
+
+function markEpisodes(showId, season, episodes, watched) {
+  if (!episodes.length || !library.has(showId)) return;
+  watchSaves.enqueue(showId, season, episodes, watched);
 }
 
 async function saveWatchChange(id, action) {
@@ -618,7 +650,7 @@ document.addEventListener('click', event => {
   if (action.dataset.action === 'season-detail') openDetail(id, Number(action.dataset.season));
   if (action.dataset.action === 'watch-next') {
     const showId = Number(action.dataset.showId);
-    saveWatchChange(showId, () => shared.watch(showId, Number(action.dataset.season), [id], true));
+    markEpisodes(showId, Number(action.dataset.season), [id], true);
   }
   if (action.dataset.action === 'episode-watch') {
     const item = library.get(detailId);
@@ -626,7 +658,14 @@ document.addEventListener('click', event => {
     if (!episode) return;
     const watched = (item.watched || []).some(value => value.episodeId === id);
     if (!watched && !released(episode)) return;
-    saveWatchChange(item.show.id, () => shared.watch(item.show.id, episode.season, [id], !watched));
+    markEpisodes(item.show.id, episode.season, [id], !watched);
+  }
+  if (action.dataset.action === 'watch-through') {
+    const item = library.get(detailId);
+    const episode = item.episodes.find(value => value.id === id);
+    if (!episode) return;
+    const episodes = seasonProgress(item, episode.season).remaining.filter(value => value.number <= episode.number).map(value => value.id);
+    markEpisodes(item.show.id, episode.season, episodes, true);
   }
   if (action.dataset.action === 'episode-calendar') {
     const item = library.get(detailId);
@@ -655,7 +694,7 @@ get('watch-season').addEventListener('click', () => {
   const item = library.get(detailId), season = Number(get('season').value);
   const progress = seasonProgress(item, season);
   const episodes = (progress.complete ? progress.available : progress.remaining).map(episode => episode.id);
-  if (episodes.length) saveWatchChange(item.show.id, () => shared.watch(item.show.id, season, episodes, !progress.complete));
+  markEpisodes(item.show.id, season, episodes, !progress.complete);
 });
 get('season-download').addEventListener('click', () => {
   const item = library.get(detailId);
@@ -737,9 +776,16 @@ get('schedule-form').addEventListener('submit', event => {
   renderWeek();
 });
 window.addEventListener('storage', event => {
+  if (event.key?.startsWith('personal-hub.tv.watch-pending.')) {
+    watchSaves.reload();
+    updateWatchSaveUI('queued');
+    watchSaves.flush();
+    return;
+  }
   if (!event.key || event.key.startsWith(prefix)) syncList();
 });
 loadLibrary();
+for (const [id, item] of library) library.set(id, watchSaves.project(item));
 updateScheduleControls();
 render();
 syncList();
@@ -758,8 +804,10 @@ setInterval(() => {
 }, 60000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { render(); syncList(); }
+  else watchSaves.flush();
 });
-window.addEventListener('online', () => syncList());
+window.addEventListener('online', () => { syncList(); watchSaves.flush(); });
+window.addEventListener('pagehide', () => watchSaves.flush());
 setInterval(() => {
   if (document.visibilityState === 'visible') syncList();
 }, 15000);
