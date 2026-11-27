@@ -109,3 +109,11 @@ th:first-child { text-align: left; }
   .chart-view { width: 8.5rem; }
   .table-heading { align-items: start; flex-direction: column; }
 }
+
+/* Keep the selected week's range ahead of the scenario controls. */
+.reference #reference-title { font-size: clamp(1.6rem,5vw,2rem); }
+.reference .reference-status { display: inline-block; max-width: none; padding: .55rem .8rem; border-radius: .7rem; border: 1px solid #c392e9; background: #6f2da840; color: #f3ddff; font-size: 1rem; font-weight: 750; }
+.reference .reference-status[data-band="above"],.reference .reference-status[data-band="below"] { background: #75301766; border-color: #cf6a40; color: #ffd3be; }
+.range-details { margin-top: .6rem; color: var(--muted); }
+.range-details summary { font-size: .875rem; font-weight: 500; }
+.range-details p { margin-top: .5rem; }

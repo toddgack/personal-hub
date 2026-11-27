@@ -24,6 +24,21 @@
       <p class="small muted" id="chart-baseline"></p>
     </section>
 
+    <section class="panel reference" aria-labelledby="reference-title">
+      <div class="section-heading"><div><p class="eyebrow">Selected week · Per-bottle range</p><h2 id="reference-title"></h2></div><span id="reference-status" class="reference-status" role="status"></span></div>
+      <div id="band-axis" class="band-axis" role="img">
+        <div id="reference-band" class="reference-band"></div>
+        <div id="base-marker" class="band-marker base-marker"><span>Start</span></div>
+        <div id="trial-marker" class="band-marker trial-marker"><span>What if</span></div>
+      </div>
+      <div class="axis-labels"><span>0 mL</span><span id="axis-max"></span></div>
+      <details class="range-details"><summary>About this range</summary>
+      <p id="reference-coverage" class="muted small"></p>
+      <p class="small"><a id="reference-source" target="_blank" rel="noopener"></a></p>
+      <p class="small reference-note">A range can cover several weeks. Weight, growth, hunger and fullness cues, and her pediatrician’s feeding plan also matter.</p>
+      </details>
+    </section>
+
     <section class="comparison" aria-labelledby="compare-title">
       <div class="section-heading"><h2 id="compare-title">What if we change the bottle?</h2><button id="reset" class="quiet">Use chart + 10 mL</button></div>
       <div class="control-grid">
@@ -44,19 +59,6 @@
         <section class="panel"><h3>Weekly volume</h3><strong id="weekly-result"></strong><p id="weekly-difference"></p></section>
         <section class="panel"><h3>32-fl-oz containers</h3><strong id="container-result"></strong><p id="container-difference"></p></section>
       </div>
-    </section>
-
-    <section class="panel reference" aria-labelledby="reference-title">
-      <div class="section-heading"><div><p class="eyebrow">Per-bottle age guide</p><h2 id="reference-title"></h2></div><span id="reference-status" class="reference-status"></span></div>
-      <div id="band-axis" class="band-axis" role="img">
-        <div id="reference-band" class="reference-band"></div>
-        <div id="base-marker" class="band-marker base-marker"><span>Start</span></div>
-        <div id="trial-marker" class="band-marker trial-marker"><span>What if</span></div>
-      </div>
-      <div class="axis-labels"><span>0 mL</span><span id="axis-max"></span></div>
-      <p id="reference-coverage" class="muted small"></p>
-      <p class="small"><a id="reference-source" target="_blank" rel="noopener"></a></p>
-      <p class="small reference-note">A range can cover several weeks. Weight, growth, hunger and fullness cues, and her pediatrician’s feeding plan also matter.</p>
       <p id="daily-note" class="daily-note"></p>
     </section>
 

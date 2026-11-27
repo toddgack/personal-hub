@@ -90,7 +90,8 @@ function render() {
 function renderBand() {
   const band = referenceBand(selectedWeek);
   write('reference-title', band.low + '–' + band.high + ' mL for this age');
-  write('reference-status', bandPosition(trialBottle, band));
+  write('reference-status', trialBottle + ' mL · ' + (trialBottle < band.low ? 'Below range' : trialBottle > band.high ? 'Above range' : 'Within range'));
+  get('reference-status').dataset.band = trialBottle < band.low ? 'below' : trialBottle > band.high ? 'above' : 'within';
   write('reference-coverage', band.coverage);
   get('reference-source').href = band.source;
   write('reference-source', band.sourceName);
