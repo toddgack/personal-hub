@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#170c22">
+  <meta name="description" content="Explore Violet’s weekly bottle forecast and compare formula feeding scenarios in mL.">
+  <title>Formula Explorer · Personal Hub</title>
+  <link rel="stylesheet" href="/app-theme.css">
+  <link rel="stylesheet" href="/formula.css">
+  <script type="module" src="/formula.js"></script>
+</head>
+<body class="hub-app formula-page">
+  <div class="swirl" aria-hidden="true"></div>
+  <main>
+    <nav class="home-nav" aria-label="Personal Hub"><a href="/">Personal Hub</a><a href="/weekly">Weekly overview</a></nav>
+    <header><span class="mark" aria-hidden="true">🍼</span><div><p class="eyebrow">Violet’s bottle forecast</p><h1>Formula Explorer</h1></div></header>
+
+    <section class="panel age-panel" aria-label="Choose Violet’s week">
+      <div><p class="eyebrow" id="week-title"></p><h2 id="week-dates"></h2><p class="muted small" id="week-age"></p></div>
+      <div class="week-select"><label for="week">Explore a week</label><select id="week"></select><button id="today">Current week</button></div>
+      <label class="sr-only" for="week-slider">Week of the first year</label>
+      <input id="week-slider" type="range" min="1" max="52" step="1">
+      <p class="small muted" id="chart-baseline"></p>
+    </section>
+
+    <section class="comparison" aria-labelledby="compare-title">
+      <div class="section-heading"><h2 id="compare-title">What if we change the bottle?</h2><button id="reset" class="quiet">Use chart + 10 mL</button></div>
+      <div class="control-grid">
+        <fieldset class="panel"><legend>Your starting point</legend><div class="fields">
+          <label>mL per bottle<input id="base-bottle" type="number" min="1" max="500" step="1" inputmode="numeric"></label>
+          <label>Feeds per day<input id="base-feeds" type="number" min="1" max="24" step="1" inputmode="numeric"></label>
+        </div></fieldset>
+        <fieldset class="panel trial-panel"><legend>Try a change</legend><div class="fields">
+          <label>mL per bottle<input id="trial-bottle" type="number" min="1" max="500" step="1" inputmode="numeric"></label>
+          <label>Feeds per day<input id="trial-feeds" type="number" min="1" max="24" step="1" inputmode="numeric"></label>
+        </div><div class="quick"><button id="minus">−10 mL</button><button id="plus" class="primary">+10 mL</button><button id="match" class="quiet">Match starting point</button></div></fieldset>
+      </div>
+      <p id="input-error" role="status"></p>
+      <p class="small muted input-note">Amounts are prepared formula. Follow the formula label’s mixing instructions.</p>
+      <div class="metrics" aria-live="polite">
+        <section class="panel"><h3>What-if bottle</h3><strong id="bottle-result"></strong><p id="bottle-difference"></p></section>
+        <section class="panel"><h3>Daily intake</h3><strong id="daily-result"></strong><p id="daily-difference"></p></section>
+        <section class="panel"><h3>Weekly volume</h3><strong id="weekly-result"></strong><p id="weekly-difference"></p></section>
+        <section class="panel"><h3>32-fl-oz containers</h3><strong id="container-result"></strong><p id="container-difference"></p></section>
+      </div>
+    </section>
+
+    <section class="panel reference" aria-labelledby="reference-title">
+      <div class="section-heading"><div><p class="eyebrow">Per-bottle age guide</p><h2 id="reference-title"></h2></div><span id="reference-status" class="reference-status"></span></div>
+      <div id="band-axis" class="band-axis" role="img">
+        <div id="reference-band" class="reference-band"></div>
+        <div id="base-marker" class="band-marker base-marker"><span>Start</span></div>
+        <div id="trial-marker" class="band-marker trial-marker"><span>What if</span></div>
+      </div>
+      <div class="axis-labels"><span>0 mL</span><span id="axis-max"></span></div>
+      <p id="reference-coverage" class="muted small"></p>
+      <p class="small"><a id="reference-source" target="_blank" rel="noopener"></a></p>
+      <p class="small reference-note">A range can cover several weeks. Weight, growth, hunger and fullness cues, and her pediatrician’s feeding plan also matter.</p>
+      <p id="daily-note" class="daily-note"></p>
+    </section>
+
+    <section class="panel chart-panel" aria-labelledby="trend-title">
+      <div class="section-heading"><div><p class="eyebrow">From your 52-week chart</p><h2 id="trend-title">How the forecast changes</h2></div><label class="chart-view">View<select id="chart-view"><option value="near">Nearby weeks</option><option value="year">First year</option></select></label></div>
+      <div class="legend"><span><i class="guide-key"></i>Published age guide</span><span><i class="forecast-key"></i>Chart forecast</span><span><i class="trial-key"></i>Your what-if</span></div>
+      <canvas id="trend" role="img" aria-label="Per-bottle formula forecast by week"></canvas>
+      <p class="small muted" id="trend-caption"></p>
+      <p class="small muted">Tap the chart to explore a different week.</p>
+    </section>
+
+    <section class="panel supply" aria-labelledby="supply-title">
+      <div class="section-heading"><h2 id="supply-title">If this pattern continues</h2><label>Plan for<select id="horizon"><option value="1">1 week</option><option value="2">2 weeks</option><option value="4">4 weeks</option></select></label></div>
+      <p class="supply-total" id="supply-total"></p><p class="muted small" id="supply-note"></p>
+      <p class="small muted">32 US fl oz ≈ 946 mL of ready-to-feed formula. Counts round up to whole containers. Actual purchases also depend on leftovers and the product’s storage instructions.</p>
+    </section>
+
+    <details class="panel combinations" open>
+      <summary>Compare bottle sizes and feed counts</summary>
+      <p class="muted small">Each cell shows the total mL per day. Tap a combination to try it.</p>
+      <div class="table-scroll"><table class="matrix"><caption class="sr-only">Daily formula volume for different bottles and feed counts</caption><thead id="matrix-head"></thead><tbody id="matrix-body"></tbody></table></div>
+    </details>
+
+    <details class="panel forecast-table">
+      <summary>All 52 weeks from your chart</summary>
+      <div class="table-heading"><p class="muted small">Bottle sizes and feed counts match your image. Totals and container counts are calculated here.</p><button id="download">Download CSV</button></div>
+      <div class="table-scroll forecast-scroll"><table><thead><tr><th>Week</th><th>Sunday start</th><th>mL / feed</th><th>Feeds / day</th><th>mL / day</th><th>mL / week</th><th>32-fl-oz / week</th></tr></thead><tbody id="forecast-rows"></tbody></table></div>
+    </details>
+
+    <details class="panel sources">
+      <summary>How to interpret the comparisons</summary>
+      <p>The supplied chart is a planning estimate. The shaded range comes from published age guides and uses age at the start of the selected week. A result within that range alone cannot establish that an increase is appropriate for Violet.</p>
+      <p>Offer feeds in response to hunger and stop when she shows fullness. The AAP gives a usual general daily reference of about 960 mL, with individual needs discussed with her pediatrician.</p>
+      <ul>
+        <li><a href="https://www.albertahealthservices.ca/assets/info/nutrition/if-nfs-how-much-infant-formula-to-prepare-for-baby.pdf">Alberta Health Services bottle preparation guide</a></li>
+        <li><a href="https://www.wechu.org/healthy-families/bottle-feeding">Windsor-Essex Public Health feeding guide</a></li>
+        <li><a href="https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/amount-and-schedule-of-formula-feedings.aspx">AAP formula amounts and daily reference</a></li>
+        <li><a href="https://www.cdc.gov/infant-toddler-nutrition/mealtime/signs-your-child-is-hungry-or-full.html">CDC hunger and fullness cues</a></li>
+        <li><a href="https://www.cdc.gov/infant-toddler-nutrition/formula-feeding/preparation-and-storage.html">CDC formula preparation and storage</a></li>
+      </ul>
+      <p>Calendar weeks start on Sunday from Violet’s birth on October 25, 2026. The chart covers 52 weeks through October 23, 2027. Container calculations use 29.5735 mL per US fl oz.</p>
+    </details>
+    <noscript>Enable JavaScript to explore the formula scenarios.</noscript>
+  </main>
+</body>
+</html>
